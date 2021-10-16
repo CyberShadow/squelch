@@ -95,6 +95,19 @@ Token[] format(Token[] tokens)
 					case "USING":
 						wsPre = WhiteSpace.newLine;
 						break;
+					case "CASE":
+						wsPre = wsPost = WhiteSpace.newLine;
+						post ~= { stack ~= "CASE"; };
+						break;
+					case "WHEN":
+					case "ELSE":
+						wsPre = WhiteSpace.newLine;
+						break;
+					case "END":
+						wsPre = WhiteSpace.newLine;
+						if (stack.endsWith("CASE"))
+							stack.popBack();
+						break;
 					default:
 						break;
 				}
