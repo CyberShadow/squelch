@@ -133,3 +133,32 @@ SELECT
 	*
 FROM
 	foo;
+
+SELECT
+	*
+FROM
+	UNNEST (
+		ARRAY <int64>[
+			1,
+			2,
+			3
+		]
+	) AS number
+EXCEPT DISTINCT
+SELECT
+	1;
+
+WITH
+	foo AS (
+		SELECT
+			*
+		FROM
+			a
+	UNION ALL
+		SELECT
+			*
+		FROM
+			b
+	)
+SELECT
+	1;

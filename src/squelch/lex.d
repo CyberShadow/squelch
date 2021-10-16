@@ -144,8 +144,13 @@ string[][] multiKeywords = [
 	["RIGHT", "JOIN"],
 	["RIGHT", "OUTER", "JOIN"],
 	["SELECT", "AS", "STRUCT"],
+	["GROUP", "BY"],
 	["ORDER", "BY"],
 	["PARTITION", "BY"],
+	["UNION", "ALL"],
+	["UNION", "DISTINCT"],
+	["INTERSECT", "DISTINCT"],
+	["EXCEPT", "DISTINCT"],
 ];
 
 Token[] lex(string s)

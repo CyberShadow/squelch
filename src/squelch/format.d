@@ -30,7 +30,7 @@ Token[] format(Token[] tokens)
 	{
 		WhiteSpace wsPre, wsPost;
 		void delegate()[] post;
-		bool isWord;
+		bool isWord, outdent;
 
 		token.match!(
 			(ref TokenWhiteSpace t)
@@ -63,7 +63,10 @@ Token[] format(Token[] tokens)
 					case "LEFT OUTER JOIN":
 					case "RIGHT JOIN":
 					case "RIGHT OUTER JOIN":
+					case "GROUP BY":
 					case "ORDER BY":
+					case "HAVING":
+					case "QUALIFY":
 					case "PARTITION BY":
 						wsPre = wsPost = WhiteSpace.newLine;
 						if (stack.endsWith("SELECT"))
@@ -75,6 +78,15 @@ Token[] format(Token[] tokens)
 						if (stack.endsWith("SELECT"))
 							stack.popBack();
 						post ~= { stack ~= "SELECT"; };
+						break;
+					case "UNION ALL":
+					case "UNION DISTINCT":
+					case "INTERSECT DISTINCT":
+					case "EXCEPT DISTINCT":
+						wsPre = wsPost = WhiteSpace.newLine;
+						if (stack.endsWith("SELECT"))
+							stack.popBack();
+						outdent = true;
 						break;
 					case "WITH":
 						wsPre = wsPost = WhiteSpace.newLine;
@@ -207,6 +219,7 @@ Token[] format(Token[] tokens)
 				goto case;
 			case WhiteSpace.newLine:
 				auto indent = stack.length;
+				if (indent && outdent) indent--;
 				result ~= Token(TokenWhiteSpace("\n" ~ "\t".replicate(indent)));
 				break;
 		}
