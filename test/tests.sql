@@ -73,17 +73,17 @@ SELECT
 		'y',
 		'xy'
 	],
-	ARRAY [
+	ARRAY[
 		1,
 		2,
 		3
 	],
-	ARRAY <string>[
+	ARRAY<string>[
 		'x',
 		'y',
 		'xy'
 	],
-	ARRAY <int64>[
+	ARRAY<int64>[
 	],
 ;
 
@@ -97,19 +97,19 @@ SELECT
 		1,
 		'abc'
 	),
-	STRUCT (
+	STRUCT(
 		1 AS foo,
 		'abc' AS bar
 	),
-	STRUCT <INT32,
+	STRUCT<INT32,
 	INT64>(
 		1,
 		2
 	),
-	STRUCT (
+	STRUCT(
 		1
 	),
-	STRUCT <INT64>(
+	STRUCT<INT64>(
 		1
 	),
 ;
@@ -137,8 +137,8 @@ FROM
 SELECT
 	*
 FROM
-	UNNEST (
-		ARRAY <int64>[
+	UNNEST(
+		ARRAY<int64>[
 			1,
 			2,
 			3
@@ -168,4 +168,4 @@ SELECT
 		WHEN a THEN 10
 		WHEN b THEN 20
 		ELSE 30
-	END ;
+	END;

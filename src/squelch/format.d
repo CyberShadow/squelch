@@ -44,9 +44,11 @@ Token[] format(Token[] tokens)
 			(ref TokenKeyword t)
 			{
 				isWord = true;
-				wsPre = wsPost = WhiteSpace.space;
 				switch (t.text)
 				{
+					case "AS":
+						wsPre = wsPost = WhiteSpace.space;
+						break;
 					case "SELECT":
 					case "SELECT AS STRUCT":
 						wsPre = wsPost = WhiteSpace.newLine;
