@@ -86,13 +86,8 @@ Token[] format(const scope Token[] tokens)
 						case "HAVING":
 						case "QUALIFY":
 						case "PARTITION BY":
-							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack.endsWith("SELECT"))
-								stack.popBack();
-							post ~= { stack ~= "SELECT"; };
-							break;
 						case "WINDOW":
-							wsPre = WhiteSpace.newLine;
+							wsPre = wsPost = WhiteSpace.newLine;
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };

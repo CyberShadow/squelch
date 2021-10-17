@@ -197,3 +197,18 @@ SELECT
 
 {# comment1 #}
 {# comment2 #}
+SELECT
+	1
+WINDOW
+	a AS (
+		PARTITION BY
+			b
+		ORDER BY
+			c
+	),
+	d AS (
+		PARTITION BY
+			e
+		ORDER BY
+			f
+	);
