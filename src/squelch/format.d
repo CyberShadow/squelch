@@ -73,6 +73,9 @@ Token[] format(const scope Token[] tokens)
 							post ~= { stack ~= "SELECT"; };
 							break;
 						case "FROM":
+							if (stack.endsWith("EXTRACT("))
+								return;
+							goto case;
 						case "WHERE":
 						case "JOIN":
 						case "CROSS JOIN":
@@ -141,11 +144,18 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "(":
 							wsPost = WhiteSpace.softNewLine;
-							post ~= { stack ~= "("; };
+							string context = "(";
+							if (tokenIndex)
+								tokens[tokenIndex - 1].match!(
+									(ref const TokenIdentifier t) { context = '`' ~ t.text.tryToString() ~ "`("; },
+									(ref const TokenKeyword t) { context = t.text ~ "("; },
+									(ref const _) {},
+								);
+							post ~= { stack ~= context; };
 							break;
 						case ")":
 							wsPre = WhiteSpace.softNewLine;
-							stack = retro(find(retro(stack), "("));
+							stack = stack.retro.find!(s => s.endsWith("(")).retro;
 							enforce(stack.length, "Mismatched )");
 							stack = stack[0 .. $-1];
 							break;

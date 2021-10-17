@@ -25,7 +25,7 @@ alias DbtStringElem = SumType!(
 
 alias DbtString = DbtStringElem[];
 
-string tryToString(DbtString s)
+string tryToString(const DbtString s)
 {
 	string result = "";
 	foreach (e; s)

@@ -212,3 +212,6 @@ WINDOW
 		ORDER BY
 			f
 	);
+
+SELECT
+	EXTRACT( HOUR FROM foo );
