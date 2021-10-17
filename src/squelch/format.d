@@ -47,6 +47,15 @@ Token[] format(Token[] tokens)
 				switch (t.text)
 				{
 					case "AS":
+					case "AND":
+					case "OR":
+					case "NOT":
+					case "LIKE":
+					case "BETWEEN":
+					case "IN":
+					case "IS":
+					case "OVER":
+					case "THEN":
 						wsPre = wsPost = WhiteSpace.space;
 						break;
 					case "SELECT":
