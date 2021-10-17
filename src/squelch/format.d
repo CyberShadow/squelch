@@ -56,6 +56,7 @@ Token[] format(Token[] tokens)
 					case "IS":
 					case "OVER":
 					case "THEN":
+					case "RETURNS":
 						wsPre = wsPost = WhiteSpace.space;
 						break;
 					case "SELECT":
@@ -125,7 +126,7 @@ Token[] format(Token[] tokens)
 			},
 			(ref TokenIdentifier t)
 			{
-				isWord = true; // Technically not, but we treat it as one for formatting purposes.
+				isWord = true;
 			},
 			(ref TokenNamedParameter t)
 			{
@@ -136,8 +137,6 @@ Token[] format(Token[] tokens)
 				switch (t.text)
 				{
 					case ".":
-					case "<":
-					case ">":
 						break;
 					case "(":
 						if (tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1] == Token(TokenOperator(")")))
@@ -165,7 +164,10 @@ Token[] format(Token[] tokens)
 						stack = stack[0 .. $-1];
 						break;
 					case ",":
-						wsPost = WhiteSpace.newLine;
+						if (stack.endsWith("<"))
+							wsPost = WhiteSpace.space;
+						else
+							wsPost = WhiteSpace.newLine;
 						break;
 					case ";":
 						wsPost = WhiteSpace.blankLine;
@@ -175,6 +177,20 @@ Token[] format(Token[] tokens)
 					default:
 						// Binary operators and others
 						wsPre = wsPost = WhiteSpace.space;
+						break;
+				}
+			},
+			(ref TokenAngleBracket t)
+			{
+				final switch (t.text)
+				{
+					case "<":
+						post ~= { stack ~= "<"; };
+						break;
+					case ">":
+						stack = retro(find(retro(stack), "<"));
+						enforce(stack.length, "Mismatched >");
+						stack = stack[0 .. $-1];
 						break;
 				}
 			},

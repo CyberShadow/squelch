@@ -69,6 +69,12 @@ struct TokenOperator
 	string text;
 }
 
+/// Distinguish < / > from the binary operator.
+struct TokenAngleBracket
+{
+	string text;
+}
+
 struct TokenString
 {
 	DbtString text;
@@ -103,6 +109,7 @@ alias Token = SumType!(
 	TokenIdentifier,
 	TokenNamedParameter,
 	TokenOperator,
+	TokenAngleBracket,
 	TokenString,
 	TokenNumber,
 	TokenDbtStatement,

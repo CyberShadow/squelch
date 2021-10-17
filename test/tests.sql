@@ -101,8 +101,7 @@ SELECT
 		1 AS foo,
 		'abc' AS bar
 	),
-	STRUCT<INT32,
-	INT64>(
+	STRUCT<INT32, INT64>(
 		1,
 		2
 	),
@@ -172,3 +171,15 @@ SELECT
 
 SELECT
 	CURRENT_DATE();
+
+CREATE OR REPLACE FUNCTION fun() RETURNS ARRAY<STRUCT<a INTEGER, b INTEGER>> AS (
+	ARRAY(
+		(
+			SELECT
+				STRUCT(
+					1,
+					1
+				)
+		)
+	)
+);

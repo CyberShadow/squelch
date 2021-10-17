@@ -372,6 +372,7 @@ tokenLoop:
 
 	// Process contextual keywords
 
+	// NUMERIC / BIGNUMERIC (in numeric literals)
 	// https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#numeric_literals
 	foreach (i; 1 .. tokens.length)
 	{
@@ -382,6 +383,15 @@ tokenLoop:
 			if (kwd.among("NUMERIC", "BIGNUMERIC"))
 				tokens[i - 1] = Token(TokenKeyword(kwd));
 		}
+	}
+
+	// RETURNS (in function declarations)
+	foreach (i; 1 .. tokens.length)
+	{
+		bool isCloseParen = tokens[i - 1].match!((ref TokenOperator t) => t.text == ")", (ref _) => false);
+		auto kwd = tokens[i].match!((ref TokenIdentifier t) => t.text, _ => null).tryToString.toUpper;
+		if (isCloseParen && kwd == "RETURNS")
+			tokens[i] = Token(TokenKeyword(kwd));
 	}
 
 	// Join together keyword sequences which act as a single keyword
@@ -398,6 +408,38 @@ tokenLoop:
 				tokens = tokens[0 .. i] ~ Token(TokenKeyword(multiKeyword.join(" "))) ~ tokens[i + multiKeyword.length .. $];
 				break;
 			}
+	}
+
+	// Handle special role of < and > after ARRAY/STRUCT
+	{
+		int depth;
+		for (size_t i = 1; i < tokens.length; i++)
+		{
+			bool isKwd = tokens[i - 1].match!((ref TokenKeyword t) => t.text.isOneOf("ARRAY", "STRUCT"), (ref _) => false);
+			auto op = tokens[i].match!((ref TokenOperator t) => t.text, (ref _) => null);
+			if (isKwd && op == "<")
+			{
+				tokens[i] = Token(TokenAngleBracket("<"));
+				depth++;
+			}
+			else
+			if (depth && op == "<")
+				throw new Exception("Ambiguous <");
+			else
+			if (depth && op == ">")
+			{
+				tokens[i] = Token(TokenAngleBracket(">"));
+				depth--;
+			}
+			else
+			if (depth && op == ">>")
+			{
+				enforce(depth >= 2, "Unclosed <");
+				tokens = tokens[0 .. i] ~ Token(TokenAngleBracket(">")) ~ Token(TokenAngleBracket(">")) ~ tokens[i + 1 .. $];
+				depth -= 2;
+			}
+		}
+		enforce(depth == 0, "Unclosed <");
 	}
 
 	return tokens;

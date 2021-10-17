@@ -39,6 +39,10 @@ void save(Token[] tokens, File output)
 			{
 				output.write(t.text);
 			},
+			(ref TokenAngleBracket t)
+			{
+				output.write(t.text);
+			},
 			(ref TokenString t)
 			{
 				if (t.bytes)
