@@ -6,6 +6,7 @@ import std.array;
 import std.exception;
 import std.range;
 import std.stdio : File;
+import std.string;
 import std.sumtype : match;
 
 import squelch.common;
@@ -63,6 +64,7 @@ Token[] format(const scope Token[] tokens)
 						case "OVER":
 						case "THEN":
 						case "RETURNS":
+						case "IGNORE":
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "SELECT":
@@ -130,6 +132,20 @@ Token[] format(const scope Token[] tokens)
 				},
 				(ref const TokenIdentifier t)
 				{
+					// If this is a Dbt call which we know doesn't produce any output,
+					// format it like a statement.
+					if (t.text.length == 1)
+						t.text[0].match!(
+							(ref const DbtExpression e)
+							{
+								string s = e.expr;
+								s.skipOver("-");
+								if (s.strip.startsWith("config("))
+									wsPre = wsPost = WhiteSpace.blankLine;
+							},
+							(ref const _) {}
+						);
+
 					isWord = true;
 				},
 				(ref const TokenNamedParameter t)

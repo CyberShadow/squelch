@@ -215,3 +215,9 @@ WINDOW
 
 SELECT
 	EXTRACT( HOUR FROM foo );
+
+{{ a }}
+
+{{ config() }}
+
+{{ b }} {{ c }}
