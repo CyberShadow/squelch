@@ -10,12 +10,16 @@ import std.sumtype : match;
 
 import squelch.common;
 
+// Break lines in expressions with more than this many tokens.
+enum breakComplexity = 8;
+
 Token[] format(const scope Token[] tokens)
 {
 	enum WhiteSpace
 	{
 		none,
 		space,
+		softNewLine, // space or newLine depending on local complexity
 		newLine,
 		blankLine,
 	}
@@ -141,16 +145,11 @@ Token[] format(const scope Token[] tokens)
 						case ".":
 							break;
 						case "(":
-							if (tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1] == Token(TokenOperator(")")))
-								return; // Don't break up "()"
-							wsPost = WhiteSpace.newLine;
+							wsPost = WhiteSpace.softNewLine;
 							post ~= { stack ~= "("; };
 							break;
 						case ")":
-							if (tokenIndex && tokens[tokenIndex - 1] == Token(TokenOperator("(")))
-								return; // Don't break up "()"
-
-							wsPre = WhiteSpace.newLine;
+							wsPre = WhiteSpace.softNewLine;
 							stack = retro(find(retro(stack), "("));
 							enforce(stack.length, "Mismatched )");
 							stack = stack[0 .. $-1];
@@ -169,10 +168,13 @@ Token[] format(const scope Token[] tokens)
 							if (stack.endsWith("<"))
 								wsPost = WhiteSpace.space;
 							else
+							if (stack.endsWith("SELECT"))
+								wsPost = WhiteSpace.newLine;
+							else
 							if (stack.endsWith("WITH"))
 								wsPost = WhiteSpace.blankLine;
 							else
-								wsPost = WhiteSpace.newLine;
+								wsPost = WhiteSpace.softNewLine;
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
@@ -267,6 +269,58 @@ Token[] format(const scope Token[] tokens)
 		}
 	}
 
+	// Second pass: add newlines for ( / ) / , tokens in complex expressions
+	{
+		// Calculate local complexity (token count) of paren groups.
+		// We use this information later to decide whether commas and parens should break lines.
+		auto complexity = new size_t[tokens.length];
+
+		size_t[] stack;
+		foreach (tokenIndex, ref token; tokens)
+			token.match!(
+				(ref const TokenOperator t)
+				{
+					switch (t.text)
+					{
+						case "(":
+							stack ~= tokenIndex;
+							break;
+
+						case ")":
+							enforce(stack.length, "Unmatched (");
+
+							auto c = tokenIndex + 1 - stack[$-1];
+							foreach (i; stack[$-1] .. tokenIndex)
+								if (whiteSpace[i + 1] >= WhiteSpace.newLine)
+									c = int.max; // Forced by e.g. sub-query
+
+							foreach (i; stack[$-1] + 1 .. tokenIndex + 1)
+								if (!complexity[i])
+									complexity[i] = c;
+
+							stack = stack[0 .. $-1];
+							break;
+						default:
+					}
+				},
+				(ref const _) {}
+			);
+
+		foreach (tokenIndex; 0 .. tokens.length + 1)
+			if (whiteSpace[tokenIndex] == WhiteSpace.softNewLine)
+			{
+				auto c = complexity[tokenIndex];
+				whiteSpace[tokenIndex] = c < breakComplexity ? WhiteSpace.space : WhiteSpace.newLine;
+			}
+	}
+
+	// Style tweak: remove space between ( and )
+	foreach (i; 1 .. tokens.length)
+		if (tokens[i - 1] == Token(TokenOperator("(")) &&
+			tokens[i    ] == Token(TokenOperator(")")) &&
+			whiteSpace[i] == WhiteSpace.space)
+			whiteSpace[i] = WhiteSpace.none;
+
 	// Final pass: materialize WhiteSpace into TokenWhiteSpace
 	Token[] result;
 	foreach (i; 0 .. tokens.length)
@@ -280,6 +334,8 @@ Token[] format(const scope Token[] tokens)
 				case WhiteSpace.space:
 					result ~= Token(TokenWhiteSpace(" "));
 					break;
+				case WhiteSpace.softNewLine:
+					assert(false);
 				case WhiteSpace.blankLine:
 					result ~= Token(TokenWhiteSpace("\n"));
 					goto case;

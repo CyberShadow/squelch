@@ -64,53 +64,31 @@ SELECT
 
 SELECT
 	[
-		1,
-		2,
-		3
+		1, 2, 3
 	],
 	[
-		'x',
-		'y',
-		'xy'
+		'x', 'y', 'xy'
 	],
 	ARRAY[
-		1,
-		2,
-		3
+		1, 2, 3
 	],
 	ARRAY<string>[
-		'x',
-		'y',
-		'xy'
+		'x', 'y', 'xy'
 	],
 	ARRAY<int64>[
 	],
 ;
 
 SELECT
-	(
-		1,
-		2,
-		3
-	),
-	(
-		1,
-		'abc'
-	),
+	( 1, 2, 3 ),
+	( 1, 'abc' ),
 	STRUCT(
 		1 AS foo,
 		'abc' AS bar
 	),
-	STRUCT<INT32, INT64>(
-		1,
-		2
-	),
-	STRUCT(
-		1
-	),
-	STRUCT<INT64>(
-		1
-	),
+	STRUCT<INT32, INT64>( 1, 2 ),
+	STRUCT( 1 ),
+	STRUCT<INT64>( 1 ),
 ;
 
 -- ----------------------------------------------------------------------------------------------------------
@@ -176,10 +154,7 @@ CREATE OR REPLACE FUNCTION fun() RETURNS ARRAY<STRUCT<a INTEGER, b INTEGER>> AS 
 	ARRAY(
 		(
 			SELECT
-				STRUCT(
-					1,
-					1
-				)
+				STRUCT( 1, 1 )
 		)
 	)
 );
@@ -196,3 +171,26 @@ WITH
 	)
 SELECT
 	1;
+
+SELECT
+	fun( 1 ),
+	fun( 1, 2 ),
+	fun( 1, 2, 3 ),
+	fun(
+		1,
+		2,
+		3,
+		4
+	),
+	fun(
+		1,
+		2,
+		3,
+		4,
+		5
+	);
+
+SELECT
+	x * ( 1 - x ) * (
+		( x * x ) / ( 1 + x ) - x - x
+	);
