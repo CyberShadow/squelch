@@ -10,7 +10,7 @@ import std.sumtype : match;
 
 import squelch.common;
 
-Token[] format(Token[] tokens)
+Token[] format(const scope Token[] tokens)
 {
 	Token[] result;
 
@@ -33,15 +33,15 @@ Token[] format(Token[] tokens)
 		bool isWord, outdent;
 
 		token.match!(
-			(ref TokenWhiteSpace t)
+			(ref const TokenWhiteSpace t)
 			{
 				assert(false);
 			},
-			(ref TokenComment t)
+			(ref const TokenComment t)
 			{
 				wsPre = wsPost = WhiteSpace.newLine;
 			},
-			(ref TokenKeyword t)
+			(ref const TokenKeyword t)
 			{
 				isWord = true;
 				switch (t.text)
@@ -124,15 +124,15 @@ Token[] format(Token[] tokens)
 						break;
 				}
 			},
-			(ref TokenIdentifier t)
+			(ref const TokenIdentifier t)
 			{
 				isWord = true;
 			},
-			(ref TokenNamedParameter t)
+			(ref const TokenNamedParameter t)
 			{
 				isWord = true;
 			},
-			(ref TokenOperator t)
+			(ref const TokenOperator t)
 			{
 				switch (t.text)
 				{
@@ -183,7 +183,7 @@ Token[] format(Token[] tokens)
 						break;
 				}
 			},
-			(ref TokenAngleBracket t)
+			(ref const TokenAngleBracket t)
 			{
 				final switch (t.text)
 				{
@@ -197,15 +197,15 @@ Token[] format(Token[] tokens)
 						break;
 				}
 			},
-			(ref TokenString t)
+			(ref const TokenString t)
 			{
 				isWord = true;
 			},
-			(ref TokenNumber t)
+			(ref const TokenNumber t)
 			{
 				isWord = true;
 			},
-			(ref TokenDbtStatement t)
+			(ref const TokenDbtStatement t)
 			{
 				wsPre = wsPost = WhiteSpace.newLine;
 				switch (t.kind)
@@ -244,7 +244,7 @@ Token[] format(Token[] tokens)
 						break;
 				}
 			},
-			(ref TokenDbtComment t)
+			(ref const TokenDbtComment t)
 			{
 			},
 		);
