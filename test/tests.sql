@@ -183,3 +183,16 @@ CREATE OR REPLACE FUNCTION fun() RETURNS ARRAY<STRUCT<a INTEGER, b INTEGER>> AS 
 		)
 	)
 );
+
+WITH
+	foo AS (
+		SELECT
+			1
+	),
+
+	bar AS (
+		SELECT
+			2
+	)
+SELECT
+	1;

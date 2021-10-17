@@ -167,6 +167,9 @@ Token[] format(Token[] tokens)
 						if (stack.endsWith("<"))
 							wsPost = WhiteSpace.space;
 						else
+						if (stack.endsWith("WITH"))
+							wsPost = WhiteSpace.blankLine;
+						else
 							wsPost = WhiteSpace.newLine;
 						break;
 					case ";":
