@@ -250,3 +250,12 @@ SELECT
 	* EXCEPT foo
 FROM
 	bar;
+
+SELECT
+	*
+FROM
+	FOO
+JOIN
+	bar
+	ON
+	baz;

@@ -67,6 +67,9 @@ Token[] format(const scope Token[] tokens)
 						case "IGNORE":
 							wsPre = wsPost = WhiteSpace.space;
 							break;
+						case "ON":
+							wsPre = wsPost = WhiteSpace.newLine;
+							break;
 						case "SELECT":
 							wsPre = wsPost = WhiteSpace.newLine;
 							if (stack.endsWith("WITH"))
