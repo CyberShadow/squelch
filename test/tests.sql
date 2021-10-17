@@ -237,3 +237,11 @@ WINDOW
 			purchases
 		ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
 	);
+
+SELECT
+	thing
+-- filter by size
+WHERE
+	size > 5
+FROM
+	things;

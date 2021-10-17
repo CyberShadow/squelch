@@ -349,6 +349,14 @@ Token[] format(const scope Token[] tokens)
 			whiteSpace[i] == WhiteSpace.space)
 			whiteSpace[i] = WhiteSpace.none;
 
+	// Comments generally describe the thing below them,
+	// so should be aligned accordingly
+	foreach_reverse (i; 1 .. tokens.length)
+		tokens[i - 1].match!(
+			(ref const TokenComment t) { indent[i - 1] = indent[i]; },
+			(ref const _) {}
+		);
+
 	// Final pass: materialize WhiteSpace into TokenWhiteSpace
 	Token[] result;
 	foreach (i; 0 .. tokens.length)
