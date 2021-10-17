@@ -258,4 +258,10 @@ FROM
 JOIN
 	bar
 	ON
-	baz;
+		baz
+	AND
+		quuz
+	AND
+		x BETWEEN y AND z
+	AND
+		xyzzy;

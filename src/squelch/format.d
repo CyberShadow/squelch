@@ -54,11 +54,8 @@ Token[] format(const scope Token[] tokens)
 					switch (t.text)
 					{
 						case "AS":
-						case "AND":
-						case "OR":
 						case "NOT":
 						case "LIKE":
-						case "BETWEEN":
 						case "IN":
 						case "IS":
 						case "OVER":
@@ -67,9 +64,31 @@ Token[] format(const scope Token[] tokens)
 						case "IGNORE":
 							wsPre = wsPost = WhiteSpace.space;
 							break;
-						case "ON":
-							wsPre = wsPost = WhiteSpace.newLine;
-							break;
+						case "BETWEEN":
+							post ~= { stack ~= "-BETWEEN"; };
+							goto case "AS";
+						case "AND":
+						case "OR":
+							if (stack.endsWith("-BETWEEN"))
+							{
+								stack.popBack();
+								goto case "AS";
+							}
+							if (stack.endsWith("SELECT") || stack.endsWith("ON"))
+							{
+								wsPre = wsPost = WhiteSpace.newLine;
+								outdent = true;
+							}
+							else
+							// if (stack.length && stack[$-1].endsWith("("))
+							// {
+							// 	wsPre = wsPost = WhiteSpace.softNewLine;
+							// 	outdent = true;
+							// }
+							// else
+								wsPre = wsPost = WhiteSpace.space;
+							return;
+
 						case "SELECT":
 							wsPre = wsPost = WhiteSpace.newLine;
 							if (stack.endsWith("WITH"))
@@ -87,12 +106,20 @@ Token[] format(const scope Token[] tokens)
 						case "QUALIFY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
+							if (stack.endsWith("ON"))
+								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };
 							break;
+						case "ON":
+							wsPre = wsPost = WhiteSpace.newLine;
+							post ~= { stack ~= "ON"; };
+							break;
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
+							if (stack.endsWith("ON"))
+								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };
@@ -104,6 +131,8 @@ Token[] format(const scope Token[] tokens)
 						case "UNION":
 						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
+							if (stack.endsWith("ON"))
+								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
 							outdent = true;
@@ -281,7 +310,7 @@ Token[] format(const scope Token[] tokens)
 			if (!whiteSpace[tokenIndex] && wasWord && isWord)
 				whiteSpace[tokenIndex] = WhiteSpace.space;
 
-			indent[tokenIndex] = stack.length;
+			indent[tokenIndex] = stack.count!(e => !e.startsWith("-"));
 			if (indent[tokenIndex] && outdent)
 				indent[tokenIndex]--;
 
