@@ -194,3 +194,6 @@ SELECT
 	x * ( 1 - x ) * (
 		( x * x ) / ( 1 + x ) - x - x
 	);
+
+{# comment1 #}
+{# comment2 #}

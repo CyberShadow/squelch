@@ -250,6 +250,7 @@ Token[] format(const scope Token[] tokens)
 				},
 				(ref const TokenDbtComment t)
 				{
+					wsPre = wsPost = WhiteSpace.newLine;
 				},
 			);
 
