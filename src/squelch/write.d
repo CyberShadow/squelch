@@ -21,7 +21,7 @@ void save(Token[] tokens, File output)
 			},
 			(ref TokenComment t)
 			{
-				output.write("-- ", t.text);
+				output.write("--", t.text.length ? " " : "", t.text);
 			},
 			(ref TokenKeyword t)
 			{

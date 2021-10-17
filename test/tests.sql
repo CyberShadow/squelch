@@ -221,3 +221,19 @@ SELECT
 {{ config() }}
 
 {{ b }} {{ c }}
+--
+SELECT
+	item,
+	purchases,
+	category,
+	LAST_VALUE( item ) OVER ( item_window ) AS most_popular
+FROM
+	Produce
+WINDOW
+	item_window AS (
+		PARTITION BY
+			category
+		ORDER BY
+			purchases
+		ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
+	);

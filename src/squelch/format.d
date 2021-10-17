@@ -97,6 +97,12 @@ Token[] format(const scope Token[] tokens)
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };
 							break;
+						case "ROWS":
+							wsPre = WhiteSpace.newLine;
+							if (stack.endsWith("SELECT"))
+								stack.popBack();
+							post ~= { stack ~= "SELECT"; };
+							break;
 						case "UNION ALL":
 						case "UNION DISTINCT":
 						case "INTERSECT DISTINCT":
