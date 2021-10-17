@@ -26,7 +26,7 @@ Token[] format(Token[] tokens)
 	bool wasWord;
 	string[] stack;
 
-	foreach (ref token; tokens)
+	foreach (tokenIndex, ref token; tokens)
 	{
 		WhiteSpace wsPre, wsPost;
 		void delegate()[] post;
@@ -140,10 +140,15 @@ Token[] format(Token[] tokens)
 					case ">":
 						break;
 					case "(":
+						if (tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1] == Token(TokenOperator(")")))
+							return; // Don't break up "()"
 						wsPost = WhiteSpace.newLine;
 						post ~= { stack ~= "("; };
 						break;
 					case ")":
+						if (tokenIndex && tokens[tokenIndex - 1] == Token(TokenOperator("(")))
+							return; // Don't break up "()"
+
 						wsPre = WhiteSpace.newLine;
 						stack = retro(find(retro(stack), "("));
 						enforce(stack.length, "Mismatched )");
