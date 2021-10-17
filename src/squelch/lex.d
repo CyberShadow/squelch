@@ -139,23 +139,6 @@ bool isIdentifier(char c) { return isAlphaNum(c) || c == '_'; }
 bool isIdentifierStart(char c) { return isAlpha(c) || c == '_'; }
 bool isIdentifierContinuation(char c) { return isIdentifier(c) || c == '-'; }
 
-string[][] multiKeywords = [
-	["CROSS", "JOIN"],
-	["INNER", "JOIN"],
-	["LEFT", "JOIN"],
-	["LEFT", "OUTER", "JOIN"],
-	["RIGHT", "JOIN"],
-	["RIGHT", "OUTER", "JOIN"],
-	["SELECT", "AS", "STRUCT"],
-	["GROUP", "BY"],
-	["ORDER", "BY"],
-	["PARTITION", "BY"],
-	["UNION", "ALL"],
-	["UNION", "DISTINCT"],
-	["INTERSECT", "DISTINCT"],
-	["EXCEPT", "DISTINCT"],
-];
-
 Token[] lex(string s)
 {
 	Token[] tokens;
@@ -392,22 +375,6 @@ tokenLoop:
 		auto kwd = tokens[i].match!((ref TokenIdentifier t) => t.text, _ => null).tryToString.toUpper;
 		if (isCloseParen && kwd == "RETURNS")
 			tokens[i] = Token(TokenKeyword(kwd));
-	}
-
-	// Join together keyword sequences which act as a single keyword
-	foreach_reverse (i; 0 .. tokens.length)
-	{
-		alias kwdEquals = (Token a, string b) =>
-			a.match!(
-				(ref TokenKeyword t) => t.text == b,
-				(ref _) => false,
-			);
-		foreach (multiKeyword; multiKeywords)
-			if (tokens[i .. $].startsWith!kwdEquals(multiKeyword))
-			{
-				tokens = tokens[0 .. i] ~ Token(TokenKeyword(multiKeyword.join(" "))) ~ tokens[i + multiKeyword.length .. $];
-				break;
-			}
 	}
 
 	// Handle special role of < and > after ARRAY/STRUCT

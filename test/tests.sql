@@ -245,3 +245,8 @@ WHERE
 	size > 5
 FROM
 	things;
+
+SELECT
+	* EXCEPT foo
+FROM
+	bar;

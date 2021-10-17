@@ -68,7 +68,6 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "SELECT":
-						case "SELECT AS STRUCT":
 							wsPre = wsPost = WhiteSpace.newLine;
 							if (stack.endsWith("WITH"))
 								stack.popBack();
@@ -80,17 +79,9 @@ Token[] format(const scope Token[] tokens)
 							goto case;
 						case "WHERE":
 						case "JOIN":
-						case "CROSS JOIN":
-						case "INNER JOIN":
-						case "LEFT JOIN":
-						case "LEFT OUTER JOIN":
-						case "RIGHT JOIN":
-						case "RIGHT OUTER JOIN":
-						case "GROUP BY":
-						case "ORDER BY":
+						case "BY":
 						case "HAVING":
 						case "QUALIFY":
-						case "PARTITION BY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
 							if (stack.endsWith("SELECT"))
@@ -103,10 +94,12 @@ Token[] format(const scope Token[] tokens)
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };
 							break;
-						case "UNION ALL":
-						case "UNION DISTINCT":
-						case "INTERSECT DISTINCT":
-						case "EXCEPT DISTINCT":
+						case "EXCEPT":
+							if (tokenIndex && tokens[tokenIndex - 1] == Token(TokenOperator("*")))
+								return;
+							goto case;
+						case "UNION":
+						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
@@ -297,7 +290,51 @@ Token[] format(const scope Token[] tokens)
 		}
 	}
 
-	// Second pass: add newlines for ( / ) / , tokens in complex expressions
+	// Massage whitespace for keyword sequences which act like one keyword (e.g. "ORDER BY")
+	{
+		void scan(bool forward, string[] startKwds, string[] tailKwds)
+		{
+			bool active;
+			for (size_t tokenIndex = forward ? 0 : tokens.length - 1;
+				 tokenIndex < tokens.length;
+				 tokenIndex += forward ? +1 : -1)
+			{
+				auto kwd = tokens[tokenIndex].match!(
+					(ref const TokenKeyword t) => t.text,
+					(ref const _) => null,
+				);
+
+				if (startKwds.canFind(kwd))
+					active = true;
+				else
+				if (active && tailKwds.canFind(kwd))
+				{
+					if (forward)
+					{
+						whiteSpace[tokenIndex + 1] = whiteSpace[tokenIndex];
+						whiteSpace[tokenIndex] = WhiteSpace.space;
+						indent[tokenIndex + 1] = indent[tokenIndex];
+					}
+					else
+					{
+						whiteSpace[tokenIndex] = whiteSpace[tokenIndex + 1];
+						whiteSpace[tokenIndex + 1] = WhiteSpace.space;
+						indent[tokenIndex] = indent[tokenIndex + 1];
+					}
+				}
+				else
+					active = false;
+			}
+		}
+
+		scan(true, ["SELECT"], ["DISTINCT", "AS"]);
+		scan(true, ["AS"], ["STRUCT"]);
+		scan(true, ["UNION", "INTERSECT", "EXCEPT"], ["ALL", "DISTINCT"]);
+		scan(false, ["BY"], ["GROUP", "ORDER", "PARTITION"]);
+		scan(false, ["JOIN"], ["FULL", "CROSS", "LEFT", "RIGHT", "INNER", "OUTER"]);
+	}
+
+	// Convert soft breaks into spaces or newlines, depending on local complexity
 	{
 		// Calculate local complexity (token count) of paren groups.
 		// We use this information later to decide whether commas and parens should break lines.
