@@ -14,6 +14,9 @@ import squelch.common;
 // Break lines in expressions with more than this many tokens.
 enum breakComplexity = 8;
 
+// String to prepend to lines, once per indentation level.
+enum indentation = "  ";
+
 Token[] format(const scope Token[] tokens)
 {
 	enum WhiteSpace
@@ -465,7 +468,7 @@ Token[] format(const scope Token[] tokens)
 					result ~= Token(TokenWhiteSpace("\n"));
 					goto case;
 				case WhiteSpace.newLine:
-					result ~= Token(TokenWhiteSpace("\n" ~ "\t".replicate(indent[i])));
+					result ~= Token(TokenWhiteSpace("\n" ~ indentation.replicate(indent[i])));
 					break;
 			}
 		}
