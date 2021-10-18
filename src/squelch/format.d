@@ -214,11 +214,11 @@ Token[] format(const scope Token[] tokens)
 							stack = stack[0 .. $-1];
 							break;
 						case "[":
-							wsPost = WhiteSpace.newLine;
+							wsPost = WhiteSpace.softNewLine;
 							post ~= { stack ~= "["; };
 							break;
 						case "]":
-							wsPre = WhiteSpace.newLine;
+							wsPre = WhiteSpace.softNewLine;
 							stack = retro(find(retro(stack), "["));
 							enforce(stack.length, "Mismatched ]");
 							stack = stack[0 .. $-1];
@@ -387,11 +387,13 @@ Token[] format(const scope Token[] tokens)
 					switch (t.text)
 					{
 						case "(":
+						case "[":
 							stack ~= tokenIndex;
 							break;
 
 						case ")":
-							enforce(stack.length, "Unmatched (");
+						case "]":
+							enforce(stack.length, "Unmatched ( / [");
 
 							auto c = tokenIndex + 1 - stack[$-1];
 							foreach (i; stack[$-1] .. tokenIndex)
@@ -420,8 +422,8 @@ Token[] format(const scope Token[] tokens)
 
 	// Style tweak: remove space between ( and )
 	foreach (i; 1 .. tokens.length)
-		if (tokens[i - 1] == Token(TokenOperator("(")) &&
-			tokens[i    ] == Token(TokenOperator(")")) &&
+		if (tokens[i - 1].among(Token(TokenOperator("(")), Token(TokenOperator("["))) &&
+			tokens[i    ].among(Token(TokenOperator(")")), Token(TokenOperator("]"))) &&
 			whiteSpace[i] == WhiteSpace.space)
 			whiteSpace[i] = WhiteSpace.none;
 

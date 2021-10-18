@@ -63,20 +63,11 @@ SELECT
 ;
 
 SELECT
-	[
-		1, 2, 3
-	],
-	[
-		'x', 'y', 'xy'
-	],
-	ARRAY[
-		1, 2, 3
-	],
-	ARRAY<string>[
-		'x', 'y', 'xy'
-	],
-	ARRAY<int64>[
-	],
+	[ 1, 2, 3 ],
+	[ 'x', 'y', 'xy' ],
+	ARRAY[ 1, 2, 3 ],
+	ARRAY<string>[ 'x', 'y', 'xy' ],
+	ARRAY<int64>[],
 ;
 
 SELECT
@@ -115,11 +106,7 @@ SELECT
 	*
 FROM
 	UNNEST(
-		ARRAY<int64>[
-			1,
-			2,
-			3
-		]
+		ARRAY<int64>[ 1, 2, 3 ]
 	) AS number
 EXCEPT DISTINCT
 SELECT
