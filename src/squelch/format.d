@@ -98,10 +98,19 @@ Token[] format(const scope Token[] tokens)
 						case "FROM":
 							if (stack.endsWith("EXTRACT("))
 								return;
-							goto case;
+							goto case "WHERE";
+						case "BY":
+							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "SELECT"]))
+							{
+								wsPre = wsPost = WhiteSpace.softNewLine;
+								if (stack.endsWith("SELECT"))
+									stack.popBack();
+								post ~= { stack ~= "SELECT"; };
+								return;
+							}
+							goto case "WHERE";
 						case "WHERE":
 						case "JOIN":
-						case "BY":
 						case "HAVING":
 						case "QUALIFY":
 						case "WINDOW":

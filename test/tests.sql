@@ -265,3 +265,6 @@ JOIN
 		x BETWEEN y AND z
 	AND
 		xyzzy;
+
+SELECT
+	COUNT( foo ) OVER ( PARTITION BY bar );
