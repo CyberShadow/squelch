@@ -12,7 +12,7 @@ import std.sumtype : match;
 import squelch.common;
 
 // Break lines in expressions with more than this many tokens.
-enum breakComplexity = 10;
+enum breakComplexity = 11;
 
 // String to prepend to lines, once per indentation level.
 enum indentation = "  ";
