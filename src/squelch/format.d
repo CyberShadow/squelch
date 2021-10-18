@@ -420,12 +420,14 @@ Token[] format(const scope Token[] tokens)
 			}
 	}
 
-	// Style tweak: remove space between ( and )
-	foreach (i; 1 .. tokens.length)
-		if (tokens[i - 1].among(Token(TokenOperator("(")), Token(TokenOperator("["))) &&
-			tokens[i    ].among(Token(TokenOperator(")")), Token(TokenOperator("]"))) &&
-			whiteSpace[i] == WhiteSpace.space)
+	// Style tweak: remove space on the inside of ( and )
+	foreach (i; 0 .. tokens.length)
+	{
+		if (tokens[i].among(Token(TokenOperator("(")), Token(TokenOperator("["))) && whiteSpace[i + 1] == WhiteSpace.space)
+			whiteSpace[i + 1] = WhiteSpace.none;
+		if (tokens[i].among(Token(TokenOperator(")")), Token(TokenOperator("]"))) && whiteSpace[i] == WhiteSpace.space)
 			whiteSpace[i] = WhiteSpace.none;
+	}
 
 	// Comments generally describe the thing below them,
 	// so should be aligned accordingly

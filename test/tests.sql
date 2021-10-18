@@ -63,23 +63,23 @@ SELECT
 ;
 
 SELECT
-	[ 1, 2, 3 ],
-	[ 'x', 'y', 'xy' ],
-	ARRAY[ 1, 2, 3 ],
-	ARRAY<string>[ 'x', 'y', 'xy' ],
+	[1, 2, 3],
+	['x', 'y', 'xy'],
+	ARRAY[1, 2, 3],
+	ARRAY<string>['x', 'y', 'xy'],
 	ARRAY<int64>[],
 ;
 
 SELECT
-	( 1, 2, 3 ),
-	( 1, 'abc' ),
+	(1, 2, 3),
+	(1, 'abc'),
 	STRUCT(
 		1 AS foo,
 		'abc' AS bar
 	),
-	STRUCT<INT32, INT64>( 1, 2 ),
-	STRUCT( 1 ),
-	STRUCT<INT64>( 1 ),
+	STRUCT<INT32, INT64>(1, 2),
+	STRUCT(1),
+	STRUCT<INT64>(1),
 ;
 
 -- ----------------------------------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ SELECT
 	*
 FROM
 	UNNEST(
-		ARRAY<int64>[ 1, 2, 3 ]
+		ARRAY<int64>[1, 2, 3]
 	) AS number
 EXCEPT DISTINCT
 SELECT
@@ -141,7 +141,7 @@ CREATE OR REPLACE FUNCTION fun() RETURNS ARRAY<STRUCT<a INTEGER, b INTEGER>> AS 
 	ARRAY(
 		(
 			SELECT
-				STRUCT( 1, 1 )
+				STRUCT(1, 1)
 		)
 	)
 );
@@ -160,9 +160,9 @@ SELECT
 	1;
 
 SELECT
-	fun( 1 ),
-	fun( 1, 2 ),
-	fun( 1, 2, 3 ),
+	fun(1),
+	fun(1, 2),
+	fun(1, 2, 3),
 	fun(
 		1,
 		2,
@@ -178,8 +178,8 @@ SELECT
 	);
 
 SELECT
-	x * ( 1 - x ) * (
-		( x * x ) / ( 1 + x ) - x - x
+	x * (1 - x) * (
+		(x * x) / (1 + x) - x - x
 	);
 
 {# comment1 #}
@@ -201,7 +201,7 @@ WINDOW
 	);
 
 SELECT
-	EXTRACT( HOUR FROM foo );
+	EXTRACT(HOUR FROM foo);
 
 {{ a }}
 
@@ -213,7 +213,7 @@ SELECT
 	item,
 	purchases,
 	category,
-	LAST_VALUE( item ) OVER ( item_window ) AS most_popular
+	LAST_VALUE(item) OVER (item_window) AS most_popular
 FROM
 	Produce
 WINDOW
@@ -251,4 +251,4 @@ JOIN
 		AND xyzzy;
 
 SELECT
-	COUNT( foo ) OVER ( PARTITION BY bar );
+	COUNT(foo) OVER (PARTITION BY bar);
