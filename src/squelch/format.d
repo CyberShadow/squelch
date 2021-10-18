@@ -230,7 +230,7 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
-							while (stack.endsWith("SELECT") || stack.endsWith("WITH"))
+							while (stack.endsWith("SELECT") || stack.endsWith("WITH") || stack.endsWith("ON"))
 								stack.popBack();
 							break;
 						default:
