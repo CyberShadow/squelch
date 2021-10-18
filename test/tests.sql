@@ -73,10 +73,7 @@ SELECT
 SELECT
   (1, 2, 3),
   (1, 'abc'),
-  STRUCT(
-    1 AS foo,
-    'abc' AS bar
-  ),
+  STRUCT(1 AS foo, 'abc' AS bar),
   STRUCT<INT32, INT64>(1, 2),
   STRUCT(1),
   STRUCT<INT64>(1),
@@ -163,12 +160,7 @@ SELECT
   fun(1),
   fun(1, 2),
   fun(1, 2, 3),
-  fun(
-    1,
-    2,
-    3,
-    4
-  ),
+  fun(1, 2, 3, 4),
   fun(
     1,
     2,
@@ -187,18 +179,8 @@ SELECT
 SELECT
   1
 WINDOW
-  a AS (
-    PARTITION BY
-      b
-    ORDER BY
-      c
-  ),
-  d AS (
-    PARTITION BY
-      e
-    ORDER BY
-      f
-  );
+  a AS (PARTITION BY b ORDER BY c),
+  d AS (PARTITION BY e ORDER BY f);
 
 SELECT
   EXTRACT(HOUR FROM foo);
