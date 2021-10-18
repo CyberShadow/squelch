@@ -104,7 +104,8 @@ Token[] format(const scope Token[] tokens)
 								return;
 							goto case "WHERE";
 						case "BY":
-							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "SELECT"]))
+							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "SELECT"]) ||
+								stack.endsWith("AS(") || stack.endsWith(["AS(", "SELECT"]))
 							{
 								wsPre = wsPost = WhiteSpace.space;
 								softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1] = true;
