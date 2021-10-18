@@ -20,13 +20,15 @@ Token[] format(const scope Token[] tokens)
 	{
 		none,
 		space,
-		softNewLine, // space or newLine depending on local complexity
 		newLine,
 		blankLine,
 	}
 	// whiteSpace[i] is what whitespace we should add before tokens[i]
 	auto whiteSpace = new WhiteSpace[tokens.length + 1];
 	auto indent = new size_t[tokens.length];
+
+	// If true, the corresponding whiteSpace may be changed to newLine
+	auto softLineBreak = new bool[tokens.length + 1];
 
 	// First pass
 	{
@@ -100,7 +102,8 @@ Token[] format(const scope Token[] tokens)
 						case "BY":
 							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "SELECT"]))
 							{
-								wsPre = wsPost = WhiteSpace.softNewLine;
+								wsPre = wsPost = WhiteSpace.space;
+								softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1] = true;
 								if (stack.endsWith("SELECT"))
 									stack.popBack();
 								post ~= { stack ~= "SELECT"; };
@@ -197,7 +200,7 @@ Token[] format(const scope Token[] tokens)
 						case ".":
 							break;
 						case "(":
-							wsPost = WhiteSpace.softNewLine;
+							softLineBreak[tokenIndex + 1] = true;
 							string context = "(";
 							if (tokenIndex)
 								tokens[tokenIndex - 1].match!(
@@ -208,17 +211,17 @@ Token[] format(const scope Token[] tokens)
 							post ~= { stack ~= context; };
 							break;
 						case ")":
-							wsPre = WhiteSpace.softNewLine;
+							softLineBreak[tokenIndex] = true;
 							stack = stack.retro.find!(s => s.endsWith("(")).retro;
 							enforce(stack.length, "Mismatched )");
 							stack = stack[0 .. $-1];
 							break;
 						case "[":
-							wsPost = WhiteSpace.softNewLine;
+							softLineBreak[tokenIndex + 1] = true;
 							post ~= { stack ~= "["; };
 							break;
 						case "]":
-							wsPre = WhiteSpace.softNewLine;
+							softLineBreak[tokenIndex] = true;
 							stack = retro(find(retro(stack), "["));
 							enforce(stack.length, "Mismatched ]");
 							stack = stack[0 .. $-1];
@@ -233,7 +236,10 @@ Token[] format(const scope Token[] tokens)
 							if (stack.endsWith("WITH"))
 								wsPost = WhiteSpace.blankLine;
 							else
-								wsPost = WhiteSpace.softNewLine;
+							{
+								wsPost = WhiteSpace.space;
+								softLineBreak[tokenIndex + 1] = true;
+							}
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
@@ -353,12 +359,16 @@ Token[] format(const scope Token[] tokens)
 						whiteSpace[tokenIndex + 1] = whiteSpace[tokenIndex];
 						whiteSpace[tokenIndex] = WhiteSpace.space;
 						indent[tokenIndex + 1] = indent[tokenIndex];
+						softLineBreak[tokenIndex + 1] = softLineBreak[tokenIndex];
+						softLineBreak[tokenIndex] = false;
 					}
 					else
 					{
 						whiteSpace[tokenIndex] = whiteSpace[tokenIndex + 1];
 						whiteSpace[tokenIndex + 1] = WhiteSpace.space;
 						indent[tokenIndex] = indent[tokenIndex + 1];
+						softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1];
+						softLineBreak[tokenIndex + 1] = false;
 					}
 				}
 				else
@@ -413,10 +423,11 @@ Token[] format(const scope Token[] tokens)
 			);
 
 		foreach (tokenIndex; 0 .. tokens.length + 1)
-			if (whiteSpace[tokenIndex] == WhiteSpace.softNewLine)
+			if (softLineBreak[tokenIndex])
 			{
 				auto c = complexity[tokenIndex];
-				whiteSpace[tokenIndex] = c < breakComplexity ? WhiteSpace.space : WhiteSpace.newLine;
+				if (c >= breakComplexity)
+					whiteSpace[tokenIndex] = WhiteSpace.newLine;
 			}
 	}
 
@@ -450,8 +461,6 @@ Token[] format(const scope Token[] tokens)
 				case WhiteSpace.space:
 					result ~= Token(TokenWhiteSpace(" "));
 					break;
-				case WhiteSpace.softNewLine:
-					assert(false);
 				case WhiteSpace.blankLine:
 					result ~= Token(TokenWhiteSpace("\n"));
 					goto case;
