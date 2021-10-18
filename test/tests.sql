@@ -259,12 +259,9 @@ JOIN
 	bar
 	ON
 		baz
-	AND
-		quuz
-	AND
-		x BETWEEN y AND z
-	AND
-		xyzzy;
+		AND quuz
+		AND x BETWEEN y AND z
+		AND xyzzy;
 
 SELECT
 	COUNT( foo ) OVER ( PARTITION BY bar );

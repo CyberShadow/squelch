@@ -74,11 +74,9 @@ Token[] format(const scope Token[] tokens)
 								stack.popBack();
 								goto case "AS";
 							}
+							wsPost = WhiteSpace.space;
 							if (stack.endsWith("SELECT") || stack.endsWith("ON"))
-							{
-								wsPre = wsPost = WhiteSpace.newLine;
-								outdent = true;
-							}
+								wsPre = WhiteSpace.newLine;
 							else
 							// if (stack.length && stack[$-1].endsWith("("))
 							// {
@@ -86,7 +84,7 @@ Token[] format(const scope Token[] tokens)
 							// 	outdent = true;
 							// }
 							// else
-								wsPre = wsPost = WhiteSpace.space;
+								wsPre = WhiteSpace.space;
 							return;
 
 						case "SELECT":
