@@ -67,6 +67,7 @@ Token[] format(const scope Token[] tokens)
 						case "THEN":
 						case "RETURNS":
 						case "IGNORE":
+						case "USING":
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "BETWEEN":
@@ -153,9 +154,6 @@ Token[] format(const scope Token[] tokens)
 						case "WITH":
 							wsPre = wsPost = WhiteSpace.newLine;
 							post ~= { stack ~= "WITH"; };
-							break;
-						case "USING":
-							wsPre = WhiteSpace.newLine;
 							break;
 						case "CASE":
 							wsPre = wsPost = WhiteSpace.newLine;
