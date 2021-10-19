@@ -356,22 +356,14 @@ Token[] format(const scope Token[] tokens)
 				else
 				if (active && tailKwds.canFind(kwd))
 				{
-					if (forward)
-					{
-						whiteSpace[tokenIndex + 1] = whiteSpace[tokenIndex];
-						whiteSpace[tokenIndex] = WhiteSpace.space;
-						indent[tokenIndex + 1] = indent[tokenIndex];
-						softLineBreak[tokenIndex + 1] = softLineBreak[tokenIndex];
-						softLineBreak[tokenIndex] = false;
-					}
-					else
-					{
-						whiteSpace[tokenIndex] = whiteSpace[tokenIndex + 1];
-						whiteSpace[tokenIndex + 1] = WhiteSpace.space;
-						indent[tokenIndex] = indent[tokenIndex + 1];
-						softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1];
-						softLineBreak[tokenIndex + 1] = false;
-					}
+					auto current = tokenIndex + (forward ? 0 : +1);
+					auto next = tokenIndex + (forward ? +1 : 0);
+
+					whiteSpace[next] = whiteSpace[current];
+					whiteSpace[current] = WhiteSpace.space;
+					indent[next] = indent[current];
+					softLineBreak[next] = softLineBreak[current];
+					softLineBreak[current] = false;
 				}
 				else
 					active = false;
