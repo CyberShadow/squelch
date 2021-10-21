@@ -234,3 +234,16 @@ JOIN
 
 SELECT
   COUNT(foo) OVER (PARTITION BY bar);
+
+WITH
+  a AS (
+    SELECT
+      b
+    WHERE
+      c IS NULL
+  )
+SELECT
+  1;
+
+SELECT
+  IF(x IS NULL, 0, 1);

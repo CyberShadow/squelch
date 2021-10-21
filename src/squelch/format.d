@@ -9,6 +9,8 @@ import std.stdio : File;
 import std.string;
 import std.sumtype : match;
 
+import ae.utils.math : maximize;
+
 import squelch.common;
 
 // Break lines in expressions with more than this many tokens.
@@ -339,7 +341,7 @@ Token[] format(const scope Token[] tokens)
 
 	// Massage whitespace for keyword sequences which act like one keyword (e.g. "ORDER BY")
 	{
-		void scan(bool forward, string[] startKwds, string[] tailKwds)
+		void scan(bool forward, string[] headKwds, string[] tailKwds)
 		{
 			bool active;
 			for (size_t tokenIndex = forward ? 0 : tokens.length - 1;
@@ -351,19 +353,22 @@ Token[] format(const scope Token[] tokens)
 					(ref const _) => null,
 				);
 
-				if (startKwds.canFind(kwd))
+				if (headKwds.canFind(kwd))
 					active = true;
 				else
 				if (active && tailKwds.canFind(kwd))
 				{
-					auto current = tokenIndex + (forward ? 0 : +1);
-					auto next = tokenIndex + (forward ? +1 : 0);
+					auto tokenIndexCurr = tokenIndex;
+					auto tokenIndexPrev = tokenIndex + (forward ? -1 : +1);
+					auto wsIndexCurr = tokenIndex + (forward ? +1 : 0);
+					auto wsIndexPrev = tokenIndex + (forward ? 0 : +1);
 
-					whiteSpace[next] = whiteSpace[current];
-					whiteSpace[current] = WhiteSpace.space;
-					indent[next] = indent[current];
-					softLineBreak[next] = softLineBreak[current];
-					softLineBreak[current] = false;
+					if (whiteSpace[wsIndexPrev] >= WhiteSpace.newLine)
+						whiteSpace[wsIndexCurr].maximize(whiteSpace[wsIndexPrev]);
+					whiteSpace[wsIndexPrev] = WhiteSpace.space;
+					softLineBreak[wsIndexCurr].maximize(softLineBreak[wsIndexPrev]);
+					softLineBreak[wsIndexPrev] = false;
+					indent[tokenIndexCurr] = indent[tokenIndexPrev];
 				}
 				else
 					active = false;
@@ -373,8 +378,11 @@ Token[] format(const scope Token[] tokens)
 		scan(true, ["SELECT"], ["DISTINCT", "AS"]);
 		scan(true, ["AS"], ["STRUCT"]);
 		scan(true, ["UNION", "INTERSECT", "EXCEPT"], ["ALL", "DISTINCT"]);
+		scan(true, ["IS"], ["NOT", "NULL", "TRUE", "FALSE"]);
+
 		scan(false, ["BY"], ["GROUP", "ORDER", "PARTITION"]);
 		scan(false, ["JOIN"], ["FULL", "CROSS", "LEFT", "RIGHT", "INNER", "OUTER"]);
+		scan(false, ["LIKE", "BETWEEN", "IN"], ["NOT"]);
 	}
 
 	// Convert soft breaks into spaces or newlines, depending on local complexity
