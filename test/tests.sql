@@ -224,8 +224,7 @@ SELECT
   *
 FROM
   FOO
-JOIN
-  bar
+JOIN bar
   ON
     baz
     AND quuz

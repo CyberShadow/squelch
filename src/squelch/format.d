@@ -118,7 +118,6 @@ Token[] format(const scope Token[] tokens)
 							}
 							goto case "WHERE";
 						case "WHERE":
-						case "JOIN":
 						case "HAVING":
 						case "QUALIFY":
 						case "WINDOW":
@@ -133,8 +132,10 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.newLine;
 							post ~= { stack ~= "ON"; };
 							break;
+						case "JOIN":
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
+							wsPost = WhiteSpace.space;
 							if (stack.endsWith("ON"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
