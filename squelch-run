@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Script to build and run squelch automatically.
+
+# Note: for performance reasons, it does not check if the squelch
+# binary needs to be rebuilt after source changes.
+# So, it is suitable to be executed as a https://pre-commit.com/ hook,
+# but not for Squelch development.
+
+set -eEuo pipefail
+
+if [[ ! -x "$(dirname "$0")"/squelch ]]
+then
+(
+	exec {self}< "$0"
+	flock "$self"
+
+	cd "$(dirname "$0")"
+
+	d_ver=2.098.0
+
+	if [[ ! -d ~/dlang/dmd-"$d_ver" ]]
+	then
+		curl -fsS https://raw.githubusercontent.com/dlang/installer/v"$d_ver"/script/install.sh | bash -s install dmd-"$d_ver"
+	fi
+
+	# shellcheck disable=SC1090
+	. ~/dlang/dmd-"$d_ver"/activate
+
+	dub build -q -b release
+) < /dev/null 1>&2
+fi
+
+exec "$(dirname "$0")"/squelch "$@"

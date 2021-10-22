@@ -1,0 +1,6 @@
+- id: squelch
+  name: squelch
+  entry: squelch-run
+  language: script
+  description: 'Formats SQL files with `Squelch`'
+  types: [sql]

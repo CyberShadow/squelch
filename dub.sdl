@@ -1,0 +1,6 @@
+name "squelch"
+description "SQL formatter for BigQuery + Dbt"
+license "BSL-1.0"
+targetType "executable"
+
+dependency "ae" version="==0.0.3102"
