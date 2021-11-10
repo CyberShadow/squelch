@@ -83,7 +83,7 @@ Token[] format(const scope Token[] tokens)
 								goto case "AS";
 							}
 							wsPost = WhiteSpace.space;
-							if (stack.endsWith("SELECT") || stack.endsWith("ON"))
+							if (stack.endsWith("SELECT") || stack.endsWith("JOIN"))
 								wsPre = WhiteSpace.newLine;
 							else
 							// if (stack.length && stack[$-1].endsWith("("))
@@ -122,21 +122,27 @@ Token[] format(const scope Token[] tokens)
 						case "QUALIFY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack.endsWith("ON"))
+							if (stack.endsWith("JOIN"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };
 							break;
+						case "JOIN":
+							wsPre = WhiteSpace.newLine;
+							wsPost = WhiteSpace.space;
+							if (stack.endsWith("JOIN"))
+								stack.popBack();
+							post ~= { stack ~= "JOIN"; };
+							break;
 						case "ON":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stack ~= "ON"; };
+							post ~= { stack ~= "JOIN"; };
 							break;
-						case "JOIN":
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							if (stack.endsWith("ON"))
+							if (stack.endsWith("JOIN"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
@@ -149,7 +155,7 @@ Token[] format(const scope Token[] tokens)
 						case "UNION":
 						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack.endsWith("ON"))
+							if (stack.endsWith("JOIN"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
@@ -248,7 +254,7 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
-							while (stack.endsWith("SELECT") || stack.endsWith("WITH") || stack.endsWith("ON"))
+							while (stack.endsWith("SELECT") || stack.endsWith("WITH") || stack.endsWith("JOIN"))
 								stack.popBack();
 							break;
 						default:
@@ -380,6 +386,7 @@ Token[] format(const scope Token[] tokens)
 		scan(true, ["AS"], ["STRUCT"]);
 		scan(true, ["UNION", "INTERSECT", "EXCEPT"], ["ALL", "DISTINCT"]);
 		scan(true, ["IS"], ["NOT", "NULL", "TRUE", "FALSE"]);
+		scan(true, ["CREATE"], ["OR", "REPLACE"]);
 
 		scan(false, ["BY"], ["GROUP", "ORDER", "PARTITION"]);
 		scan(false, ["JOIN"], ["FULL", "CROSS", "LEFT", "RIGHT", "INNER", "OUTER"]);
