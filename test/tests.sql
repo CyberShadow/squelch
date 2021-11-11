@@ -167,6 +167,23 @@ SELECT
     3,
     4,
     5
+  ),
+  fun(
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ),
+  fun(
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
   );
 
 SELECT
@@ -246,3 +263,31 @@ SELECT
 
 SELECT
   IF(x IS NULL, 0, 1);
+
+SELECT
+  [1, 2, 3],
+  [1, 2, 3],
+;
+
+SELECT
+  1
+WHERE
+  x.x = x.x
+  AND FUN(x.x) BETWEEN x.x AND x.x;
+
+SELECT
+  1
+  INNER JOIN (
+      SELECT
+        a
+      FROM
+        b
+    ) USING (c, d)
+WINDOW
+  a;
+
+SELECT
+  1
+WINDOW
+  x AS (PARTITION BY b ORDER BY c DESC),
+  y AS (PARTITION BY b ORDER BY c DESC);
