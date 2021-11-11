@@ -157,33 +157,33 @@ SELECT
   1;
 
 SELECT
-  fun(1),
-  fun(1, 2),
-  fun(1, 2, 3),
-  fun(1, 2, 3, 4),
+  fun(a),
+  fun(a, b),
+  fun(a, b, c),
+  fun(a, b, c, d),
   fun(
-    1,
-    2,
-    3,
-    4,
-    5
+    a,
+    b,
+    c,
+    d,
+    e
   ),
   fun(
-    1,
-    2,
-    3,
-    4,
-    5,
-    6
+    a,
+    b,
+    c,
+    d,
+    e,
+    f
   ),
   fun(
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7
+    a,
+    b,
+    c,
+    d,
+    e,
+    f,
+    g
   );
 
 SELECT
