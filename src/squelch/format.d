@@ -13,8 +13,8 @@ import ae.utils.math : maximize;
 
 import squelch.common;
 
-// Break lines in expressions with more than this many tokens.
-enum breakComplexity = 11;
+// Break lines in expressions with more than this many typical characters.
+enum maxLineComplexity = 70;
 
 // String to prepend to lines, once per indentation level.
 enum indentation = "  ";
@@ -425,7 +425,9 @@ Token[] format(const scope Token[] tokens)
 						case "]":
 							enforce(stack.length, "Unmatched ( / [");
 
-							auto c = tokenIndex + 1 - stack[$-1];
+							int c;
+							foreach (tok; tokens[stack[$-1] .. tokenIndex + 1])
+								c += tok.typicalLength;
 							foreach (i; stack[$-1] .. tokenIndex)
 								if (whiteSpace[i + 1] >= WhiteSpace.newLine)
 									c = int.max; // Forced by e.g. sub-query
@@ -446,7 +448,7 @@ Token[] format(const scope Token[] tokens)
 			if (softLineBreak[tokenIndex])
 			{
 				auto c = complexity[tokenIndex];
-				if (c >= breakComplexity)
+				if (c >= maxLineComplexity)
 					whiteSpace[tokenIndex] = WhiteSpace.newLine;
 			}
 	}
@@ -496,4 +498,21 @@ Token[] format(const scope Token[] tokens)
 		result ~= Token(TokenWhiteSpace("\n"));
 
 	return result;
+}
+
+private size_t typicalLength(const ref Token tok)
+{
+	return tok.match!(
+		(ref const TokenWhiteSpace t) => 0,
+		(ref const TokenComment t) => 60,
+		(ref const TokenKeyword t) => 5 + 1,
+		(ref const TokenIdentifier t) => 15,
+		(ref const TokenNamedParameter t) => 10,
+		(ref const TokenOperator t) => 1 + 1,
+		(ref const TokenAngleBracket t) => 1 + 1,
+		(ref const TokenString t) => 10,
+		(ref const TokenNumber t) => 3 + 1,
+		(ref const TokenDbtStatement t) => 50,
+		(ref const TokenDbtComment t) => 100,
+	);
 }

@@ -102,9 +102,7 @@ FROM
 SELECT
   *
 FROM
-  UNNEST(
-    ARRAY<int64>[1, 2, 3]
-  ) AS number
+  UNNEST(ARRAY<int64>[1, 2, 3]) AS number
 EXCEPT DISTINCT
 SELECT
   1;
@@ -160,7 +158,12 @@ SELECT
   fun(a),
   fun(a, b),
   fun(a, b, c),
-  fun(a, b, c, d),
+  fun(
+    a,
+    b,
+    c,
+    d
+  ),
   fun(
     a,
     b,
@@ -293,3 +296,15 @@ SELECT
 WINDOW
   x AS (PARTITION BY b ORDER BY c DESC),
   y AS (PARTITION BY b ORDER BY c DESC);
+
+SELECT
+  x / AVG(x) OVER (
+    PARTITION BY
+      x,
+      y
+  ) AS z
+FROM
+  foo;
+
+SELECT
+  XXXXXYYYYYXXXXX((xxxxxyyyyyxxxxx / xxxxxyyyyyxxxxx - 123) * 123, 123) / 123 * 123 AS xxxxxyyyyyxxxxx;
