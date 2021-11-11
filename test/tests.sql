@@ -156,43 +156,71 @@ SELECT
 
 SELECT
   fun(a),
-  fun(a, b),
-  fun(a, b, c),
+  fun(a_b),
+  fun(a_b_c),
+  fun(a_b_c_d),
+  fun(a_b_c_d_e),
+  fun(a_b_c_d_e_f),
+  fun(a_b_c_d_e_f_g),
+  fun(a_b_c_d_e_f_g_h),
+  fun(a_b_c_d_e_f_g_h_i),
+  fun(a_b_c_d_e_f_g_h_i_j),
   fun(
-    a,
-    b,
-    c,
-    d
+    a_b_c_d_e_f_g_h_i_j_k
   ),
   fun(
-    a,
-    b,
-    c,
-    d,
-    e
+    a_b_c_d_e_f_g_h_i_j_k_l
   ),
   fun(
-    a,
-    b,
-    c,
-    d,
-    e,
-    f
+    a_b_c_d_e_f_g_h_i_j_k_l_m
   ),
   fun(
-    a,
-    b,
-    c,
-    d,
-    e,
-    f,
-    g
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n
+  ),
+  fun(
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n_o
+  ),
+  fun(
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p
   );
 
 SELECT
-  x * (1 - x) * (
-    (x * x) / (1 + x) - x - x
+  fun(a_a_a),
+  fun(a_a_a, b_b_b),
+  fun(a_a_a, b_b_b, c_c_c),
+  fun(
+    a_a_a,
+    b_b_b,
+    c_c_c,
+    d_d_d
+  ),
+  fun(
+    a_a_a,
+    b_b_b,
+    c_c_c,
+    d_d_d,
+    e_e_e
+  ),
+  fun(
+    a_a_a,
+    b_b_b,
+    c_c_c,
+    d_d_d,
+    e_e_e,
+    f_f_f
+  ),
+  fun(
+    a_a_a,
+    b_b_b,
+    c_c_c,
+    d_d_d,
+    e_e_e,
+    f_f_f,
+    g_g_g
   );
+
+SELECT
+  x * (1 - x) * ((x * x) / (1 + x) - x - x);
 
 {# comment1 #}
 {# comment2 #}
@@ -307,4 +335,4 @@ FROM
   foo;
 
 SELECT
-  XXXXXYYYYYXXXXX((xxxxxyyyyyxxxxx / xxxxxyyyyyxxxxx - 123) * 123, 123) / 123 * 123 AS xxxxxyyyyyxxxxx;
+  XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123) / 123 * 123 AS xxxxx_yyyyy_xxxxx;

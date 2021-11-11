@@ -14,7 +14,7 @@ import ae.utils.math : maximize;
 import squelch.common;
 
 // Break lines in expressions with more than this many typical characters.
-enum maxLineComplexity = 70;
+enum maxLineComplexity = 65;
 
 // String to prepend to lines, once per indentation level.
 enum indentation = "  ";
@@ -409,13 +409,12 @@ Token[] format(const scope Token[] tokens)
 			(ref const TokenWhiteSpace t) => 0,
 			(ref const TokenComment t) => 60,
 			(ref const TokenKeyword t) => 5 + 1,
-			(ref const TokenIdentifier t) =>
-				// Identifiers before a . are typically much shorter.
-				tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1].match!(
-					(ref const TokenOperator t) => t.text == ".",
-					(ref const _) => false)
-				? 5
-				: 15,
+			(ref const TokenIdentifier t) => t.text.count!(
+				e => e.match!(
+					(dchar c) => c == '_',
+					(ref _) => false,
+				)
+			) * (5 + 1) + 5,
 			(ref const TokenNamedParameter t) => 10,
 			(ref const TokenOperator t) => 1 + 1,
 			(ref const TokenAngleBracket t) => 1 + 1,
