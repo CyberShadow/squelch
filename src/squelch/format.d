@@ -122,7 +122,7 @@ Token[] format(const scope Token[] tokens)
 						case "QUALIFY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack.endsWith("JOIN"))
+							while (stack.endsWith("JOIN"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
@@ -131,7 +131,7 @@ Token[] format(const scope Token[] tokens)
 						case "JOIN":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							if (stack.endsWith("JOIN"))
+							while (stack.endsWith("JOIN"))
 								stack.popBack();
 							post ~= { stack ~= "JOIN"; };
 							break;
@@ -142,7 +142,7 @@ Token[] format(const scope Token[] tokens)
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							if (stack.endsWith("JOIN"))
+							while (stack.endsWith("JOIN"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();
@@ -155,7 +155,7 @@ Token[] format(const scope Token[] tokens)
 						case "UNION":
 						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack.endsWith("JOIN"))
+							while (stack.endsWith("JOIN"))
 								stack.popBack();
 							if (stack.endsWith("SELECT"))
 								stack.popBack();

@@ -246,7 +246,9 @@ FROM
       baz
       AND quuz
       AND x BETWEEN y AND z
-      AND xyzzy;
+      AND xyzzy
+WHERE
+  1 = 1;
 
 SELECT
   COUNT(foo) OVER (PARTITION BY bar);
