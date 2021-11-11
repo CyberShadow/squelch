@@ -219,6 +219,8 @@ Token[] format(const scope Token[] tokens)
 									(ref const TokenKeyword t) { context = t.text ~ "("; },
 									(ref const _) {},
 								);
+							if (stack.length && context.among("JOIN(", "USING(") && stack[$-1] == "JOIN")
+								stack = stack[0 .. $-1];
 							post ~= { stack ~= context; };
 							break;
 						case ")":

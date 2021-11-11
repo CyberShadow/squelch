@@ -280,11 +280,11 @@ WHERE
 SELECT
   1
   INNER JOIN (
-      SELECT
-        a
-      FROM
-        b
-    ) USING (c, d)
+    SELECT
+      a
+    FROM
+      b
+  ) USING (c, d)
 WINDOW
   a;
 
