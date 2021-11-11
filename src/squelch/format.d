@@ -403,6 +403,29 @@ Token[] format(const scope Token[] tokens)
 		scan(false, ["LIKE", "BETWEEN", "IN"], ["NOT"]);
 	}
 
+	size_t typicalLength(size_t tokenIndex)
+	{
+		return tokens[tokenIndex].match!(
+			(ref const TokenWhiteSpace t) => 0,
+			(ref const TokenComment t) => 60,
+			(ref const TokenKeyword t) => 5 + 1,
+			(ref const TokenIdentifier t) =>
+				// Identifiers before a . are typically much shorter.
+				tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1].match!(
+					(ref const TokenOperator t) => t.text == ".",
+					(ref const _) => false)
+				? 5
+				: 15,
+			(ref const TokenNamedParameter t) => 10,
+			(ref const TokenOperator t) => 1 + 1,
+			(ref const TokenAngleBracket t) => 1 + 1,
+			(ref const TokenString t) => 10,
+			(ref const TokenNumber t) => 3 + 1,
+			(ref const TokenDbtStatement t) => 50,
+			(ref const TokenDbtComment t) => 100,
+		);
+	}
+
 	// Convert soft breaks into spaces or newlines, depending on local complexity
 	{
 		// Calculate local complexity (token count) of paren groups.
@@ -426,8 +449,8 @@ Token[] format(const scope Token[] tokens)
 							enforce(stack.length, "Unmatched ( / [");
 
 							int c;
-							foreach (tok; tokens[stack[$-1] .. tokenIndex + 1])
-								c += tok.typicalLength;
+							foreach (i; stack[$-1] .. tokenIndex + 1)
+								c += typicalLength(i);
 							foreach (i; stack[$-1] .. tokenIndex)
 								if (whiteSpace[i + 1] >= WhiteSpace.newLine)
 									c = int.max; // Forced by e.g. sub-query
@@ -498,21 +521,4 @@ Token[] format(const scope Token[] tokens)
 		result ~= Token(TokenWhiteSpace("\n"));
 
 	return result;
-}
-
-private size_t typicalLength(const ref Token tok)
-{
-	return tok.match!(
-		(ref const TokenWhiteSpace t) => 0,
-		(ref const TokenComment t) => 60,
-		(ref const TokenKeyword t) => 5 + 1,
-		(ref const TokenIdentifier t) => 15,
-		(ref const TokenNamedParameter t) => 10,
-		(ref const TokenOperator t) => 1 + 1,
-		(ref const TokenAngleBracket t) => 1 + 1,
-		(ref const TokenString t) => 10,
-		(ref const TokenNumber t) => 3 + 1,
-		(ref const TokenDbtStatement t) => 50,
-		(ref const TokenDbtComment t) => 100,
-	);
 }
