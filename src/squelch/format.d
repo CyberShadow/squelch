@@ -228,6 +228,14 @@ Token[] format(const scope Token[] tokens)
 							stack = stack.retro.find!(s => s.endsWith("(")).retro;
 							enforce(stack.length, "Mismatched )");
 							stack = stack[0 .. $-1];
+
+							if (tokenIndex + 1 < tokens.length)
+								tokens[tokenIndex + 1].match!(
+									(ref const TokenOperator t) {},
+									(ref const TokenNumber t) {},
+									(ref const _) { wsPost = WhiteSpace.space; }
+								);
+
 							break;
 						case "[":
 							softLineBreak[tokenIndex + 1] = true;
