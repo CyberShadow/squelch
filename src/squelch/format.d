@@ -267,6 +267,16 @@ Token[] format(const scope Token[] tokens)
 							while (stack.endsWith("SELECT") || stack.endsWith("WITH") || stack.endsWith("JOIN"))
 								stack.popBack();
 							break;
+						case "*":
+							if (tokenIndex && tokens[tokenIndex - 1].match!(
+									(ref const TokenOperator t) => t.text == ".",
+									(ref const _) => false
+								))
+							{
+								wsPost = WhiteSpace.space;
+								break;
+							}
+							goto default;
 						default:
 							// Binary operators and others
 							wsPre = wsPost = WhiteSpace.space;
