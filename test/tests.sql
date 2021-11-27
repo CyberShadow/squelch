@@ -338,6 +338,14 @@ SELECT
   XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123) / 123 * 123 AS xxxxx_yyyyy_xxxxx;
 
 SELECT
+  IFNULL(
+    MIN(IF(f = 0, i, NULL)),
+    ARRAY_LENGTH(f_f)
+  )
+FROM
+  UNNEST(f_f) AS flag WITH OFFSET AS i;
+
+SELECT
   {% for x in y %}
     {{ x.f }},
   {% else %}

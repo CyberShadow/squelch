@@ -389,6 +389,15 @@ tokenLoop:
 			tokens[i] = Token(TokenKeyword(kwd));
 	}
 
+	// WITH OFFSET
+	foreach_reverse (i; 1 .. tokens.length)
+	{
+		bool isWith = tokens[i - 1] == Token(TokenKeyword("WITH"));
+		auto kwd = tokens[i].match!((ref TokenIdentifier t) => t.text, _ => null).tryToString.toUpper;
+		if (isWith && kwd == "OFFSET")
+			tokens = tokens[0 .. i - 1] ~ Token(TokenKeyword("WITH OFFSET")) ~ tokens[i + 1 .. $];
+	}
+
 	// Handle special role of < and > after ARRAY/STRUCT
 	{
 		int depth;
