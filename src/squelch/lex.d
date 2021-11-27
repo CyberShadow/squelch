@@ -345,8 +345,20 @@ tokenLoop:
 		foreach_reverse (operator; operators)
 			if (s.startsWith(operator))
 			{
-				tokens ~= Token(TokenOperator(operator));
 				s = s[operator.length .. $];
+
+				// Normalize operators
+				string token = {
+					switch (operator)
+					{
+						case "<>":
+							return "!=";
+						default:
+							return operator;
+					}
+				}();
+
+				tokens ~= Token(TokenOperator(token));
 				continue tokenLoop;
 			}
 
