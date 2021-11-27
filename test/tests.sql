@@ -336,3 +336,11 @@ FROM
 
 SELECT
   XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123) / 123 * 123 AS xxxxx_yyyyy_xxxxx;
+
+SELECT
+  {% for x in y %}
+    {{ x.f }},
+  {% else %}
+    *
+  {% endfor %}
+;

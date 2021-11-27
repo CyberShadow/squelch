@@ -322,13 +322,16 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "elif":
 						case "else":
+						{
 							while (stack.length && !stack[$-1].startsWith("%")) stack.popBack();
-							enforce(stack.endsWith("%if"),
+							enforce(stack.endsWith("%if") || stack.endsWith("%for"),
 								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1][1..$] : "end-of-file")
 							);
+							auto context = stack[$-1];
 							stack.popBack();
-							post ~= { stack ~= "%if"; };
+							post ~= { stack ~= context; };
 							break;
+						}
 						case "endfor":
 						case "endif":
 						case "endmacro":
