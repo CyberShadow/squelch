@@ -51,7 +51,15 @@ struct TokenComment
 
 struct TokenKeyword
 {
-	string text;
+	string kind; // Group synonyms and lexically similar keywords
+	string text; // Actual text
+
+	this(string kind, string text = null)
+	{
+		if (!text) text = kind;
+		this.kind = kind;
+		this.text = text;
+	}
 }
 
 struct TokenIdentifier

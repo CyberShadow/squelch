@@ -385,3 +385,9 @@ SELECT
   1
 FROM
   x;
+
+SELECT DISTINCT AS STRUCT
+  x,
+  y
+FROM
+  t;

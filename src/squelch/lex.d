@@ -1,6 +1,7 @@
 module squelch.lex;
 
 import std.algorithm.comparison;
+import std.algorithm.mutation : reverse;
 import std.algorithm.searching;
 import std.array;
 import std.ascii;
@@ -398,12 +399,91 @@ tokenLoop:
 			tokens = tokens[0 .. i - 1] ~ Token(TokenKeyword("WITH OFFSET")) ~ tokens[i + 1 .. $];
 	}
 
+	// Process keyword sequences which act like one keyword (e.g. "ORDER BY")
+	{
+		// Whether to join tokens[i-1] and tokens[i], and the kind to use for the joined keyword
+		auto join = new string[tokens.length + 1];
+
+		void scan(bool forward, string[] headKwds, string[] tailKwds, string kind = null)
+		{
+			string joinKind;
+			for (size_t tokenIndex = forward ? 0 : tokens.length - 1;
+				 tokenIndex < tokens.length;
+				 tokenIndex += forward ? +1 : -1)
+			{
+				auto kwd = tokens[tokenIndex].match!(
+					(ref const TokenKeyword t) => t.text,
+					(ref const _) => null,
+				);
+
+				if (joinKind)
+				{
+					if (kwd && tailKwds.canFind(kwd))
+					{
+						join[tokenIndex + (forward ? 0 : +1)] = joinKind;
+						continue;
+					}
+					else
+						joinKind = null;
+				}
+
+				if (!joinKind && kwd && headKwds.canFind(kwd))
+					joinKind = kind ? kind : kwd;
+			}
+		}
+
+		scan(true, ["SELECT"], ["DISTINCT", "AS"]);
+		scan(true, ["AS"], ["STRUCT"]);
+		scan(true, ["UNION", "INTERSECT", "EXCEPT"], ["ALL", "DISTINCT"]);
+		scan(true, ["IS"], ["NOT", "NULL", "TRUE", "FALSE"], "IS_X");
+		scan(true, ["CREATE"], ["OR", "REPLACE"]);
+
+		scan(false, ["BY"], ["GROUP", "ORDER", "PARTITION"]);
+		scan(false, ["JOIN"], ["FULL", "CROSS", "LEFT", "RIGHT", "INNER", "OUTER"]);
+		scan(false, ["LIKE", "BETWEEN", "IN"], ["NOT"]);
+
+		{
+			Token[] outTokens;
+			TokenKeyword k;
+
+			foreach (tokenIndex, ref token; tokens)
+			{
+				if (join[tokenIndex])
+					token.match!(
+						(ref const TokenKeyword t) { k.text ~= " " ~ t.text; },
+						(ref const _) { assert(false); },
+					);
+				else
+				{
+					if (k.text)
+					{
+						outTokens ~= Token(k);
+						k = TokenKeyword.init;
+					}
+
+					if (join[tokenIndex + 1])
+						token.match!(
+							(ref const TokenKeyword t) { k = TokenKeyword(join[tokenIndex + 1], t.text); },
+							(ref const _) { assert(false); },
+						);
+					else
+						outTokens ~= token;
+				}
+			}
+
+			if (k.text)
+				outTokens ~= Token(k);
+
+			tokens = outTokens;
+		}
+	}
+
 	// Handle special role of < and > after ARRAY/STRUCT
 	{
 		int depth;
 		for (size_t i = 1; i < tokens.length; i++)
 		{
-			bool isKwd = tokens[i - 1].match!((ref TokenKeyword t) => t.text.isOneOf("ARRAY", "STRUCT"), (ref _) => false);
+			bool isKwd = tokens[i - 1].match!((ref TokenKeyword t) => t.kind.isOneOf("ARRAY", "STRUCT"), (ref _) => false);
 			auto op = tokens[i].match!((ref TokenOperator t) => t.text, (ref _) => null);
 			if (isKwd && op == "<")
 			{

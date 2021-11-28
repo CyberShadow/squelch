@@ -58,7 +58,7 @@ Token[] format(const scope Token[] tokens)
 				(ref const TokenKeyword t)
 				{
 					isWord = true;
-					switch (t.text)
+					switch (t.kind)
 					{
 						case "AS":
 						case "NOT":
@@ -216,7 +216,7 @@ Token[] format(const scope Token[] tokens)
 							if (tokenIndex)
 								tokens[tokenIndex - 1].match!(
 									(ref const TokenIdentifier t) { context = '`' ~ t.text.tryToString() ~ "`("; },
-									(ref const TokenKeyword t) { context = t.text ~ "("; },
+									(ref const TokenKeyword t) { context = t.kind ~ "("; },
 									(ref const _) {},
 								);
 							if (stack.length && context.among("JOIN(", "USING(") && stack[$-1] == "JOIN")
@@ -377,59 +377,12 @@ Token[] format(const scope Token[] tokens)
 		}
 	}
 
-	// Massage whitespace for keyword sequences which act like one keyword (e.g. "ORDER BY")
-	{
-		void scan(bool forward, string[] headKwds, string[] tailKwds)
-		{
-			bool active;
-			for (size_t tokenIndex = forward ? 0 : tokens.length - 1;
-				 tokenIndex < tokens.length;
-				 tokenIndex += forward ? +1 : -1)
-			{
-				auto kwd = tokens[tokenIndex].match!(
-					(ref const TokenKeyword t) => t.text,
-					(ref const _) => null,
-				);
-
-				if (headKwds.canFind(kwd))
-					active = true;
-				else
-				if (active && tailKwds.canFind(kwd))
-				{
-					auto tokenIndexCurr = tokenIndex;
-					auto tokenIndexPrev = tokenIndex + (forward ? -1 : +1);
-					auto wsIndexCurr = tokenIndex + (forward ? +1 : 0);
-					auto wsIndexPrev = tokenIndex + (forward ? 0 : +1);
-
-					if (whiteSpace[wsIndexPrev] >= WhiteSpace.newLine)
-						whiteSpace[wsIndexCurr].maximize(whiteSpace[wsIndexPrev]);
-					whiteSpace[wsIndexPrev] = WhiteSpace.space;
-					softLineBreak[wsIndexCurr].maximize(softLineBreak[wsIndexPrev]);
-					softLineBreak[wsIndexPrev] = false;
-					indent[tokenIndexCurr] = indent[tokenIndexPrev];
-				}
-				else
-					active = false;
-			}
-		}
-
-		scan(true, ["SELECT"], ["DISTINCT", "AS"]);
-		scan(true, ["AS"], ["STRUCT"]);
-		scan(true, ["UNION", "INTERSECT", "EXCEPT"], ["ALL", "DISTINCT"]);
-		scan(true, ["IS"], ["NOT", "NULL", "TRUE", "FALSE"]);
-		scan(true, ["CREATE"], ["OR", "REPLACE"]);
-
-		scan(false, ["BY"], ["GROUP", "ORDER", "PARTITION"]);
-		scan(false, ["JOIN"], ["FULL", "CROSS", "LEFT", "RIGHT", "INNER", "OUTER"]);
-		scan(false, ["LIKE", "BETWEEN", "IN"], ["NOT"]);
-	}
-
 	size_t typicalLength(size_t tokenIndex)
 	{
 		return tokens[tokenIndex].match!(
 			(ref const TokenWhiteSpace t) => 0,
 			(ref const TokenComment t) => 60,
-			(ref const TokenKeyword t) => 5 + 1,
+			(ref const TokenKeyword t) => t.text.split(" ").length * (5 + 1),
 			(ref const TokenIdentifier t) => t.text.count!(
 				e => e.match!(
 					(dchar c) => c == '_',
