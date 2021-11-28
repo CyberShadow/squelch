@@ -276,6 +276,14 @@ Token[] format(const scope Token[] tokens)
 								wsPost = WhiteSpace.space;
 								break;
 							}
+							if (tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1].match!(
+									(ref const TokenOperator t) => t.text == ",",
+									(ref const _) => false
+								))
+							{
+								wsPre = WhiteSpace.space;
+								break;
+							}
 							goto default;
 						default:
 							// Binary operators and others

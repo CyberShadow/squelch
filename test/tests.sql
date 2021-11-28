@@ -379,3 +379,9 @@ SELECT
       i,
       j
   );
+
+SELECT
+  *,
+  1
+FROM
+  x;
