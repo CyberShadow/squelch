@@ -326,11 +326,7 @@ WINDOW
   y AS (PARTITION BY b ORDER BY c DESC);
 
 SELECT
-  x / AVG(x) OVER (
-    PARTITION BY
-      x,
-      y
-  ) AS z
+  x / AVG(x) OVER (PARTITION BY x, y) AS z
 FROM
   foo;
 
@@ -352,3 +348,34 @@ SELECT
     *
   {% endfor %}
 ;
+
+WITH
+  a_a AS (
+    SELECT DISTINCT
+      b_b,
+      MAX(c_c_c) AS c_c_c,
+    FROM
+      {{ ref('d_d_d_d') }}
+    WHERE
+      a_a = b_b_b
+    GROUP BY
+      c_c
+  )
+SELECT
+  1;
+
+SELECT
+  x OVER (PARTITION BY a, b, c),
+  y OVER (
+    PARTITION BY
+      a,
+      b,
+      c,
+      d,
+      e,
+      f,
+      g,
+      h,
+      i,
+      j
+  );

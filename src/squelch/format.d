@@ -106,14 +106,14 @@ Token[] format(const scope Token[] tokens)
 								return;
 							goto case "WHERE";
 						case "BY":
-							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "SELECT"]) ||
-								stack.endsWith("AS(") || stack.endsWith(["AS(", "SELECT"]))
+							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "BY"]) ||
+								stack.endsWith("AS(") || stack.endsWith(["AS(", "BY"]))
 							{
 								wsPre = wsPost = WhiteSpace.space;
 								softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1] = true;
-								if (stack.endsWith("SELECT"))
+								if (stack.endsWith("BY"))
 									stack.popBack();
-								post ~= { stack ~= "SELECT"; };
+								post ~= { stack ~= "BY"; };
 								return;
 							}
 							goto case "WHERE";
@@ -144,7 +144,7 @@ Token[] format(const scope Token[] tokens)
 							wsPost = WhiteSpace.space;
 							while (stack.endsWith("JOIN"))
 								stack.popBack();
-							if (stack.endsWith("SELECT"))
+							if (stack.endsWith("SELECT") || stack.endsWith("BY"))
 								stack.popBack();
 							post ~= { stack ~= "SELECT"; };
 							break;
