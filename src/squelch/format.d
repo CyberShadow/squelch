@@ -1,6 +1,7 @@
 module squelch.format;
 
 import std.algorithm.comparison;
+import std.algorithm.iteration : map;
 import std.algorithm.searching;
 import std.array;
 import std.exception;
@@ -9,6 +10,7 @@ import std.stdio : File;
 import std.string;
 import std.sumtype : match;
 
+import ae.utils.array : elementIndex;
 import ae.utils.math : maximize;
 
 import squelch.common;
@@ -21,6 +23,19 @@ enum indentation = "  ";
 
 Token[] format(const scope Token[] tokens)
 {
+	/// Tree node.
+	static struct Node
+	{
+		string type;
+		int indent = 1;
+
+		Node*[] children; /// If null, then this is a leaf
+
+		/// Covered tokens.
+		size_t start, end;
+	}
+	Node root = { indent : 0 };
+
 	enum WhiteSpace
 	{
 		none,
@@ -30,21 +45,39 @@ Token[] format(const scope Token[] tokens)
 	}
 	// whiteSpace[i] is what whitespace we should add before tokens[i]
 	auto whiteSpace = new WhiteSpace[tokens.length + 1];
-	auto indent = new size_t[tokens.length];
 
 	// If true, the corresponding whiteSpace may be changed to newLine
 	auto softLineBreak = new bool[tokens.length + 1];
 
 	// First pass
 	{
+		Node*[] stack = [&root];
 		bool wasWord;
-		string[] stack;
 
-		foreach (tokenIndex, ref token; tokens)
+		foreach (ref token; tokens)
 		{
 			WhiteSpace wsPre, wsPost;
 			void delegate()[] post;
-			bool isWord, outdent;
+			bool isWord;
+
+			size_t tokenIndex = tokens.elementIndex(token);
+
+			void stackPush(string type, int indent = 1)
+			{
+				auto n = new Node;
+				n.type = type;
+				n.indent = indent;
+				n.start = tokenIndex;
+
+				stack[$-1].children ~= n;
+				stack ~= n;
+			}
+
+			void stackPop()
+			{
+				stack[$-1].end = tokenIndex;
+				stack = stack[0 .. $-1];
+			}
 
 			token.match!(
 				(ref const TokenWhiteSpace t)
@@ -73,17 +106,17 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "BETWEEN":
-							post ~= { stack ~= "-BETWEEN"; };
+							post ~= { stackPush("BETWEEN", 0); };
 							goto case "AS";
 						case "AND":
 						case "OR":
-							if (stack.endsWith("-BETWEEN"))
+							if (stack[$-1].type == "BETWEEN")
 							{
-								stack.popBack();
+								stackPop();
 								goto case "AS";
 							}
 							wsPost = WhiteSpace.space;
-							if (stack.endsWith("SELECT") || stack.endsWith("JOIN"))
+							if (stack[$-1].type == "SELECT" || stack[$-1].type == "JOIN")
 								wsPre = WhiteSpace.newLine;
 							else
 							// if (stack.length && stack[$-1].endsWith("("))
@@ -97,23 +130,23 @@ Token[] format(const scope Token[] tokens)
 
 						case "SELECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack.endsWith("WITH"))
-								stack.popBack();
-							post ~= { stack ~= "SELECT"; };
+							if (stack[$-1].type == "WITH")
+								stackPop();
+							post ~= { stackPush("SELECT"); };
 							break;
 						case "FROM":
-							if (stack.endsWith("EXTRACT("))
+							if (stack[$-1].type == "EXTRACT(")
 								return;
 							goto case "WHERE";
 						case "BY":
-							if (stack.endsWith("OVER(") || stack.endsWith(["OVER(", "BY"]) ||
-								stack.endsWith("AS(") || stack.endsWith(["AS(", "BY"]))
+							if (stack[$-1].type == "OVER(" || stack.map!(n => n.type).endsWith(["OVER(", "BY"]) ||
+								stack[$-1].type == "AS(" || stack.map!(n => n.type).endsWith(["AS(", "BY"]))
 							{
 								wsPre = wsPost = WhiteSpace.space;
 								softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1] = true;
-								if (stack.endsWith("BY"))
-									stack.popBack();
-								post ~= { stack ~= "BY"; };
+								if (stack[$-1].type == "BY")
+									stackPop();
+								post ~= { stackPush("BY"); };
 								return;
 							}
 							goto case "WHERE";
@@ -122,31 +155,31 @@ Token[] format(const scope Token[] tokens)
 						case "QUALIFY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
-							while (stack.endsWith("JOIN"))
-								stack.popBack();
-							if (stack.endsWith("SELECT"))
-								stack.popBack();
-							post ~= { stack ~= "SELECT"; };
+							while (stack[$-1].type == "JOIN")
+								stackPop();
+							if (stack[$-1].type == "SELECT")
+								stackPop();
+							post ~= { stackPush("SELECT"); };
 							break;
 						case "JOIN":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							while (stack.endsWith("JOIN"))
-								stack.popBack();
-							post ~= { stack ~= "JOIN"; };
+							while (stack[$-1].type == "JOIN")
+								stackPop();
+							post ~= { stackPush("JOIN"); };
 							break;
 						case "ON":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stack ~= "JOIN"; };
+							post ~= { stackPush("JOIN"); };
 							break;
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							while (stack.endsWith("JOIN"))
-								stack.popBack();
-							if (stack.endsWith("SELECT") || stack.endsWith("BY"))
-								stack.popBack();
-							post ~= { stack ~= "SELECT"; };
+							while (stack[$-1].type == "JOIN")
+								stackPop();
+							if (stack[$-1].type.among("SELECT", "BY"))
+								stackPop();
+							post ~= { stackPush("SELECT"); };
 							break;
 						case "EXCEPT":
 							if (tokenIndex && tokens[tokenIndex - 1] == Token(TokenOperator("*")))
@@ -155,19 +188,20 @@ Token[] format(const scope Token[] tokens)
 						case "UNION":
 						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							while (stack.endsWith("JOIN"))
-								stack.popBack();
-							if (stack.endsWith("SELECT"))
-								stack.popBack();
-							outdent = true;
+							while (stack[$-1].type == "JOIN")
+								stackPop();
+							if (stack[$-1].type == "SELECT")
+								stackPop();
+							stackPush("UNION", -1);
+							post ~= { stackPop(); };
 							break;
 						case "WITH":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stack ~= "WITH"; };
+							post ~= { stackPush("WITH"); };
 							break;
 						case "CASE":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stack ~= "CASE"; };
+							post ~= { stackPush("CASE"); };
 							break;
 						case "WHEN":
 						case "ELSE":
@@ -175,8 +209,8 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "END":
 							wsPre = WhiteSpace.newLine;
-							if (stack.endsWith("CASE"))
-								stack.popBack();
+							if (stack[$-1].type == "CASE")
+								stackPop();
 							break;
 						default:
 							break;
@@ -219,15 +253,16 @@ Token[] format(const scope Token[] tokens)
 									(ref const TokenKeyword t) { context = t.kind ~ "("; },
 									(ref const _) {},
 								);
-							if (stack.length && context.among("JOIN(", "USING(") && stack[$-1] == "JOIN")
-								stack = stack[0 .. $-1];
-							post ~= { stack ~= context; };
+							if (stack.length && context.among("JOIN(", "USING(") && stack[$-1].type == "JOIN")
+								stackPop();
+							post ~= { stackPush(context); };
 							break;
 						case ")":
 							softLineBreak[tokenIndex] = true;
-							stack = stack.retro.find!(s => s.endsWith("(")).retro;
+							while (stack.length && !stack[$-1].type.endsWith("("))
+								stackPop();
 							enforce(stack.length, "Mismatched )");
-							stack = stack[0 .. $-1];
+							stackPop();
 
 							if (tokenIndex + 1 < tokens.length)
 								tokens[tokenIndex + 1].match!(
@@ -239,22 +274,23 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "[":
 							softLineBreak[tokenIndex + 1] = true;
-							post ~= { stack ~= "["; };
+							post ~= { stackPush("["); };
 							break;
 						case "]":
 							softLineBreak[tokenIndex] = true;
-							stack = retro(find(retro(stack), "["));
+							while (stack.length && stack[$-1].type != "[")
+								stackPop();
 							enforce(stack.length, "Mismatched ]");
-							stack = stack[0 .. $-1];
+							stackPop();
 							break;
 						case ",":
-							if (stack.endsWith("<"))
+							if (stack[$-1].type == "<")
 								wsPost = WhiteSpace.space;
 							else
-							if (stack.endsWith("SELECT"))
+							if (stack[$-1].type == "SELECT")
 								wsPost = WhiteSpace.newLine;
 							else
-							if (stack.endsWith("WITH"))
+							if (stack[$-1].type == "WITH")
 								wsPost = WhiteSpace.blankLine;
 							else
 							{
@@ -264,8 +300,8 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
-							while (stack.endsWith("SELECT") || stack.endsWith("WITH") || stack.endsWith("JOIN"))
-								stack.popBack();
+							while (stack[$-1].type == "SELECT" || stack[$-1].type == "WITH" || stack[$-1].type == "JOIN")
+								stackPop();
 							break;
 						case "*":
 							if (tokenIndex && tokens[tokenIndex - 1].match!(
@@ -296,12 +332,13 @@ Token[] format(const scope Token[] tokens)
 					final switch (t.text)
 					{
 						case "<":
-							post ~= { stack ~= "<"; };
+							post ~= { stackPush("<"); };
 							break;
 						case ">":
-							stack = retro(find(retro(stack), "<"));
+							while (stack.length && stack[$-1].type != "<")
+								stackPop();
 							enforce(stack.length, "Mismatched >");
-							stack = stack[0 .. $-1];
+							stackPop();
 							break;
 					}
 				},
@@ -322,22 +359,22 @@ Token[] format(const scope Token[] tokens)
 						case "if":
 						case "macro":
 						case "filter":
-							post ~= { stack ~= "%" ~ t.kind; };
+							post ~= { stackPush("%" ~ t.kind); };
 							break;
 						case "set":
 							if (!t.text.canFind('='))
-								post ~= { stack ~= "%" ~ t.kind; };
+								post ~= { stackPush("%" ~ t.kind); };
 							break;
 						case "elif":
 						case "else":
 						{
-							while (stack.length && !stack[$-1].startsWith("%")) stack.popBack();
-							enforce(stack.endsWith("%if") || stack.endsWith("%for"),
-								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1][1..$] : "end-of-file")
+							while (stack.length && !stack[$-1].type.startsWith("%")) stackPop();
+							enforce(stack[$-1].type == "%if" || stack[$-1].type == "%for",
+								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1].type[1..$] : "end-of-file")
 							);
-							auto context = stack[$-1];
-							stack.popBack();
-							post ~= { stack ~= context; };
+							auto context = stack[$-1].type;
+							stackPop();
+							post ~= { stackPush(context); };
 							break;
 						}
 						case "endfor":
@@ -345,11 +382,11 @@ Token[] format(const scope Token[] tokens)
 						case "endmacro":
 						case "endfilter":
 						case "endset":
-							while (stack.length && !stack[$-1].startsWith("%")) stack.popBack();
-							enforce(stack.endsWith("%" ~ t.kind[3 .. $]),
-								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1][1..$] : "end-of-file")
+							while (stack.length && !stack[$-1].type.startsWith("%")) stackPop();
+							enforce(stack.map!(n => n.type).endsWith("%" ~ t.kind[3 .. $]),
+								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1].type[1..$] : "end-of-file")
 							);
-							stack.popBack();
+							stackPop();
 							break;
 						default:
 							break;
@@ -365,15 +402,18 @@ Token[] format(const scope Token[] tokens)
 			if (!whiteSpace[tokenIndex] && wasWord && isWord)
 				whiteSpace[tokenIndex] = WhiteSpace.space;
 
-			indent[tokenIndex] = stack.count!(e => !e.startsWith("-"));
-			if (indent[tokenIndex] && outdent)
-				indent[tokenIndex]--;
-
+			tokenIndex++;
 			foreach (fun; post)
 				fun();
 
-			whiteSpace[tokenIndex + 1] = wsPost;
+			whiteSpace[tokenIndex] = wsPost;
 			wasWord = isWord;
+		}
+
+		while (stack.length)
+		{
+			stack[$-1].end = tokens.length;
+			stack = stack[0 .. $-1];
 		}
 	}
 
@@ -458,6 +498,18 @@ Token[] format(const scope Token[] tokens)
 			whiteSpace[i] = WhiteSpace.none;
 	}
 
+	// Convert nesting level into per-token indent level.
+	auto indent = new int[tokens.length];
+	{
+		void scan(Node* node)
+		{
+			indent[node.start .. node.end] += node.indent;
+			foreach (child; node.children)
+				scan(child);
+		}
+		scan(&root);
+	}
+
 	// Comments generally describe the thing below them,
 	// so should be aligned accordingly
 	foreach_reverse (i; 1 .. tokens.length)
@@ -483,7 +535,7 @@ Token[] format(const scope Token[] tokens)
 					result ~= Token(TokenWhiteSpace("\n"));
 					goto case;
 				case WhiteSpace.newLine:
-					result ~= Token(TokenWhiteSpace("\n" ~ indentation.replicate(indent[i])));
+					result ~= Token(TokenWhiteSpace("\n" ~ indentation.replicate(indent[i].max(0))));
 					break;
 			}
 		}
