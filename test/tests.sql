@@ -546,3 +546,8 @@ SELECT
   AS a,
 
   2 AS b;
+
+SELECT
+  CAST(
+    x_x_x_x_x_x_x_x_x_x AS STRING
+  );

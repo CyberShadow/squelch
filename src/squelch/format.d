@@ -261,10 +261,15 @@ Token[] format(const scope Token[] tokens)
 					{
 						case "AS":
 							wsPre = wsPost = WhiteSpace.space;
-							if (tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1].match!(
+							if (tokenIndex + 1 < tokens.length
+								&& tokens[tokenIndex + 1].match!(
 									(ref const TokenIdentifier t) => true,
 									(ref const _) => false
-								))
+								)
+								&& stack.retro
+								.find!(n => n.level >= Level.select)
+								.front
+								.level == Level.select)
 							{
 								stackInsertBinary(Level.as, t.kind);
 							}
