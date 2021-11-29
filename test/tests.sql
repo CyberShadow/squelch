@@ -445,14 +445,16 @@ WINDOW
 
 SELECT
      CASE
-       WHEN x_x_x IN (
-         '1',
-         '2',
-         '3',
-         '4',
-         '5',
-         '6'
-       )
+       WHEN
+          x_x_x
+       IN (
+            '1',
+            '2',
+            '3',
+            '4',
+            '5',
+            '6'
+          )
          THEN y
        ELSE y
      END

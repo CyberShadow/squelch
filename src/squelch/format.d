@@ -283,11 +283,13 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "BETWEEN":
-						case "LIKE":
-						case "IN":
 							auto n = stackInsertBinary(Level.comparison, t.kind);
 							n.softLineBreak.remove(tokenIndex);
 							n.softLineBreak.remove(n.start);
+							break;
+						case "LIKE":
+						case "IN":
+							stackInsertBinary(Level.comparison, t.kind);
 							break;
 						case "AND":
 							wsPre = wsPost = WhiteSpace.space;
