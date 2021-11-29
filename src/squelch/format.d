@@ -147,6 +147,26 @@ Token[] format(const scope Token[] tokens)
 					stackPop_(false);
 			}
 
+			Node* stackEnter(Level level, string type, bool glueBackwards = false)
+			{
+				stackPopTo(level);
+
+				if (stack[$-1].level == level)
+				{
+					if (glueBackwards)
+					{
+						stack[$-1].prevType = stack[$-1].type;
+						stack[$-1].type = type;
+						return stack[$-1];
+					}
+					else
+						stackPop_(false);
+				}
+
+				return stackPush_(level, type);
+			}
+
+
 			Node* stackExit(Level level, string expected)
 			{
 				stackPopTo(level);
@@ -156,12 +176,15 @@ Token[] format(const scope Token[] tokens)
 				return stackPop_(true);
 			}
 
-			Node* stackInsert(Level level, string type, bool extendBackwards)
+			// Like stackEnter, but adopts previous nodes that have a higher priority.
+			// Suitable for binary operators.
+			Node* stackInsert(Level level, string type)
 			{
 				stackPopTo(level);
 
 				if (stack[$-1].level == level)
 				{
+					// Implicitly glue backwards
 					stack[$-1].prevType = stack[$-1].type;
 					stack[$-1].type = type;
 				}
@@ -171,7 +194,6 @@ Token[] format(const scope Token[] tokens)
 					Node*[] children;
 
 					// Move the previous hierarchy into the new inserted level
-					if (extendBackwards)
 					{
 						auto i = p.children.length;
 						while (i && p.children[i-1].level < level)
@@ -184,13 +206,10 @@ Token[] format(const scope Token[] tokens)
 					n.children = children;
 					n.start = children.length ? children[0].start : tokenIndex;
 
-					if (extendBackwards)
-					{
-						// Extend the start backwards to adopt non-syntax tokens
-						auto limit = p.children.length > 1 ? p.children[$-2].end : p.start;
-						while (n.start > limit && (n.start - 1) !in p.tokenIndent && (n.start) !in p.softLineBreak)
-							n.start--;
-					}
+					// Extend the start backwards to adopt non-syntax tokens
+					auto limit = p.children.length > 1 ? p.children[$-2].end : p.start;
+					while (n.start > limit && (n.start - 1) !in p.tokenIndent && (n.start) !in p.softLineBreak)
+						n.start--;
 				}
 				return stack[$-1];
 			}
@@ -222,12 +241,12 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "BETWEEN":
-							stackInsert(Level.comparison, "BETWEEN", true);
+							stackInsert(Level.comparison, "BETWEEN");
 							goto case "AS";
 						case "AND":
 						case "OR":
 							wsPre = wsPost = WhiteSpace.space;
-							auto n = stackInsert(Level.comparison, t.kind, true);
+							auto n = stackInsert(Level.comparison, t.kind);
 							n.indent = 0;
 							if (n.prevType == "BETWEEN")
 							{
@@ -242,7 +261,7 @@ Token[] format(const scope Token[] tokens)
 
 						case "SELECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							auto n = stackInsert(Level.select, t.text, false);
+							auto n = stackEnter(Level.select, t.text);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "FROM":
@@ -258,7 +277,7 @@ Token[] format(const scope Token[] tokens)
 								.among("OVER(", "AS("))
 							{
 								wsPre = wsPost = WhiteSpace.space;
-								auto n = stackInsert(Level.select, "BY-inline", false);
+								auto n = stackEnter(Level.select, "BY-inline", true);
 								n.tokenIndent[tokenIndex] = 0;
 								n.softLineBreak[tokenIndex] = n.softLineBreak[tokenIndex + 1] = true;
 								return;
@@ -269,25 +288,25 @@ Token[] format(const scope Token[] tokens)
 						case "QUALIFY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
-							auto n = stackInsert(Level.select, t.text, false);
+							auto n = stackEnter(Level.select, t.text);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "JOIN":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
 							stackPopTo(Level.join);
-							auto n = stackInsert(Level.join, t.kind, false);
+							auto n = stackEnter(Level.join, t.kind);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "ON":
 							wsPre = wsPost = WhiteSpace.newLine;
-							auto n = stackInsert(Level.on, t.kind, false);
+							auto n = stackEnter(Level.on, t.kind);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							auto n = stackInsert(Level.select, t.kind, false);
+							auto n = stackEnter(Level.select, t.kind);
 							n.tokenIndent[tokenIndex] = 0;
 							n.softLineBreak[tokenIndex] = true;
 							break;
@@ -298,35 +317,35 @@ Token[] format(const scope Token[] tokens)
 						case "UNION":
 						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							auto n = stackInsert(Level.union_, t.text, false);
+							auto n = stackEnter(Level.union_, t.text);
 							n.indent = 0;
 							n.tokenIndent[tokenIndex] = -1;
 							break;
 						case "WITH":
 							wsPre = wsPost = WhiteSpace.newLine;
-							auto n = stackInsert(Level.select, t.text, false);
+							auto n = stackEnter(Level.select, t.text);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "CREATE":
 							wsPre = WhiteSpace.newLine;
-							auto n = stackInsert(Level.select, t.text, false);
+							auto n = stackEnter(Level.select, t.text);
 							n.indent = 0;
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "CASE":
 							wsPre = wsPost = WhiteSpace.newLine;
-							auto n = stackInsert(Level.case_, t.text, false);
+							auto n = stackEnter(Level.case_, t.text);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "WHEN":
 						case "ELSE":
 							wsPre = WhiteSpace.newLine;
-							auto n = stackInsert(Level.when, t.text, false);
+							auto n = stackEnter(Level.when, t.text);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "THEN":
 							wsPre = wsPost = WhiteSpace.space;
-							auto n = stackInsert(Level.then, t.text, false);
+							auto n = stackEnter(Level.then, t.text);
 							n.tokenIndent[tokenIndex] = 0;
 							n.softLineBreak[tokenIndex] = true;
 							break;
@@ -377,7 +396,7 @@ Token[] format(const scope Token[] tokens)
 								);
 							if (context.among("JOIN(", "USING(") && stack[$-1].type == "JOIN")
 								stack[$-1].indent = 0;
-							auto n = stackInsert(Level.parensOuter, context, true);
+							auto n = stackInsert(Level.parensOuter, context);
 							n.indent = n.tokenIndent[tokenIndex] = 0;
 							n = stackPush_(Level.parensInner, context);
 							n.tokenIndent[tokenIndex] = 0;
@@ -399,7 +418,7 @@ Token[] format(const scope Token[] tokens)
 
 							break;
 						case "[":
-							auto n = stackInsert(Level.parensOuter, t.text, true);
+							auto n = stackInsert(Level.parensOuter, t.text);
 							n.indent = n.tokenIndent[tokenIndex] = 0;
 							n = stackPush_(Level.parensInner, t.text);
 							n.tokenIndent[tokenIndex] = 0;
@@ -413,7 +432,7 @@ Token[] format(const scope Token[] tokens)
 							stackExit(Level.parensOuter, "[ ... ]");
 							break;
 						case ",":
-							auto n = stackInsert(Level.comma, t.text, true);
+							auto n = stackInsert(Level.comma, t.text);
 							n.indent = 0;
 							n.tokenIndent[tokenIndex] = 0;
 							n.complexityBias = 2; // Match complexity of parens
@@ -434,7 +453,7 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
-							auto n = stackInsert(Level.statement, t.text, true);
+							auto n = stackInsert(Level.statement, t.text);
 							n.indent = 0;
 							n.tokenIndent[tokenIndex] = 0;
 							break;
@@ -467,7 +486,7 @@ Token[] format(const scope Token[] tokens)
 					final switch (t.text)
 					{
 						case "<":
-							auto n = stackInsert(Level.parensOuter, t.text, true);
+							auto n = stackInsert(Level.parensOuter, t.text);
 							n.indent = n.tokenIndent[tokenIndex] = 0;
 							n = stackPush_(Level.parensInner, t.text);
 							n.tokenIndent[tokenIndex] = 0;

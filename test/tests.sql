@@ -248,10 +248,7 @@ FROM
   Produce
 WINDOW
   item_window AS (
-    PARTITION BY
-      category
-    ORDER BY
-      purchases
+    PARTITION BY category ORDER BY purchases
     ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
   );
 
@@ -403,3 +400,12 @@ SELECT
     WHEN x = 2 THEN 2
     ELSE 0
   END;
+
+SELECT
+  *
+FROM
+  x
+  LEFT JOIN x USING (market, channel, date)
+  LEFT JOIN x
+    ON
+      st.market = tr.market;
