@@ -449,6 +449,8 @@ Token[] format(const scope Token[] tokens)
 							n = stackPush_(Level.parensInner, context);
 							n.tokenIndent[tokenIndex] = 0;
 							n.softLineBreak[tokenIndex + 1] = true;
+							if (context == "IN(")
+								stack[$-3].tokenIndent[tokenIndex] = 0;
 							break;
 						case ")":
 							auto n = stackExit(Level.parensInner, "( ... )");
@@ -819,8 +821,9 @@ Token[] format(const scope Token[] tokens)
 				// Process the child
 				if (childIndex < n.children.length)
 				{
-					currentIndent += n.indent;
-					scope(success) currentIndent -= n.indent;
+					auto childIndent = n.tokenIndent.get(i, n.indent);
+					currentIndent += childIndent;
+					scope(success) currentIndent -= childIndent;
 
 					scan(n.children[childIndex]);
 				}
