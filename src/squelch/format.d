@@ -171,6 +171,7 @@ Token[] format(const scope Token[] tokens)
 					Node*[] children;
 
 					// Move the previous hierarchy into the new inserted level
+					if (extendBackwards)
 					{
 						auto i = p.children.length;
 						while (i && p.children[i-1].level < level)

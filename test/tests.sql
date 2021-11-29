@@ -397,7 +397,7 @@ FROM
   t;
 
 SELECT
-  1,
+  COUNT(x),
   CASE
     WHEN x = 1 THEN 1
     WHEN x = 2 THEN 2
