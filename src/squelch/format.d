@@ -391,13 +391,15 @@ Token[] format(const scope Token[] tokens)
 						case "ELSE":
 							wsPre = WhiteSpace.newLine;
 							auto n = stackEnter(Level.when, t.text);
-							n.indent = 0;
+							n.indent = 2 * indentationWidth;
 							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex + 1] = true;
 							break;
 						case "THEN":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							auto n = stackEnter(Level.then, t.text);
+							auto n = stackEnter(Level.when, t.text);
+							n.indent = 2 * indentationWidth;
 							n.tokenIndent[tokenIndex] = indentationWidth;
 							break;
 						case "END":

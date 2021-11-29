@@ -446,15 +446,15 @@ WINDOW
 SELECT
      CASE
        WHEN
-          x_x_x
-       IN (
-         '1',
-         '2',
-         '3',
-         '4',
-         '5',
-         '6'
-       )
+              x_x_x
+           IN (
+             '1',
+             '2',
+             '3',
+             '4',
+             '5',
+             '6'
+           )
          THEN y
        ELSE y
      END
@@ -465,13 +465,14 @@ SELECT
        -- x
        WHEN x_x AND x_x_x > x_x
          THEN STRUCT(
-           x_x AS x,
-           x_x_x - x_x AS x
-         )
+             x_x AS x,
+             x_x_x - x_x AS x
+           )
        WHEN x_x AND x_x_x <= x_x
          THEN STRUCT(0.0 AS x, x_x_x AS x)
        -- x
-       WHEN x_x > '' AND x_x_x_x_x > 0
+       WHEN
+           x_x > '' AND x_x_x_x_x > 0
          THEN STRUCT(x_x_x AS x, 0.0 AS x)
        -- x
        ELSE STRUCT(0.0 AS x, 0.0 AS x)
@@ -512,8 +513,8 @@ FROM
 SELECT
      CASE
        WHEN
-         MIN(x_x_x_x_x) OVER (PARTITION BY x_x_x)
-       = x_x_x_x_x
+             MIN(x_x_x_x_x) OVER (PARTITION BY x_x_x)
+           = x_x_x_x_x
          THEN 1
        ELSE 0
      END
@@ -562,3 +563,15 @@ SELECT
          -- x
      AND x_x IS NULL
   OR x_x IN UNNEST(x_x_x);
+
+SELECT
+  CASE
+    WHEN
+            x(x_x) = 0
+        AND x(x_x, 'x') > 0
+      THEN x_x('x', x_x)
+    WHEN
+            x(x_x) = 0
+        AND x(x_x, 'x') > 0
+      THEN x_x('x', x_x)
+  END;
