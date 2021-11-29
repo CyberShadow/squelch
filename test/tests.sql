@@ -503,3 +503,11 @@ SELECT
   COUNT(x_x) OVER (PARTITION BY a_a_a_a_a_a_a)
 FROM
   x;
+
+CASE
+  WHEN
+    MIN(x_x_x_x_x) OVER (PARTITION BY x_x_x)
+  = x_x_x_x_x
+    THEN 1
+  ELSE 0
+END AS x_x_x_x_x;

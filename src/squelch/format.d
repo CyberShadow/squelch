@@ -222,7 +222,7 @@ Token[] format(const scope Token[] tokens)
 				n.indent.maximize(type.length + 1);
 				n.tokenIndent[tokenIndex] = 0;
 				n.conditionalIndent = true;
-				n.softLineBreak[tokenIndex] = true;
+				n.softLineBreak[tokenIndex] = n.softLineBreak[n.start] = true;
 				return n;
 			}
 
@@ -255,6 +255,7 @@ Token[] format(const scope Token[] tokens)
 						case "IN":
 							auto n = stackInsertBinary(Level.comparison, t.kind);
 							n.softLineBreak.remove(tokenIndex);
+							n.softLineBreak.remove(n.start);
 							goto case "AS";
 						case "AND":
 							wsPre = wsPost = WhiteSpace.space;
