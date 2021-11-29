@@ -832,6 +832,26 @@ Token[] format(const scope Token[] tokens)
 		assert(currentIndent == 0);
 	}
 
+	// Style tweak: add blank lines surrounding AS blocks
+	{
+		void adjust(Node* n)
+		{
+			foreach (childIndex, child; n.children)
+			{
+				if (n.level == Level.comma
+					&& child.level == Level.as
+					&& whiteSpace[child.start] >= WhiteSpace.newLine
+					&& child.indent /* was not cleared */)
+				{
+					whiteSpace[child.start].maximize(WhiteSpace.blankLine);
+					whiteSpace[child.end + 1].maximize(WhiteSpace.blankLine);
+				}
+				adjust(child);
+			}
+		}
+		adjust(&root);
+	}
+
 	// Style tweak: remove space on the inside of ( and )
 	foreach (i; 0 .. tokens.length)
 	{

@@ -537,3 +537,11 @@ WHERE
 SELECT
       (1 + 1)
   AND x_x_x_x_x = 1;
+
+SELECT
+  *,
+
+     x_x_x_x_x * x_x_x_x_x
+  AS a,
+
+  2 AS b;
