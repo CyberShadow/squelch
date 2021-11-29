@@ -538,14 +538,11 @@ Token[] format(const scope Token[] tokens)
 						case "endmacro":
 						case "endfilter":
 						case "endset":
-							auto i = stack.countUntil!(n => n.level == Level.dbt);
-							enforce(i >= 0, "Mismatched " ~ t.kind);
-							enforce(stack[i].type.endsWith("%" ~ t.kind[3 .. $]),
-								"Found " ~ t.kind ~ " but expected end" ~ stack[i].type[1..$]
+							auto n = stackExit(Level.dbt, "%" ~ t.kind[3 .. $]);
+							enforce(n.type.endsWith("%" ~ t.kind[3 .. $]),
+								"Found " ~ t.kind ~ " but expected end" ~ n.type[1..$]
 							);
-							stack[i].tokenIndent[tokenIndex] = 0;
-							stack[i].end = tokenIndex + 1;
-							stack = stack[0 .. i] ~ stack[i + 1 .. $];
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						default:
 							break;

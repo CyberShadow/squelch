@@ -467,3 +467,10 @@ SELECT
     -- x
     ELSE STRUCT(0.0 AS x, 0.0 AS x)
   END AS x_x_x;
+
+SELECT
+  x
+  {% if x %}
+    AND x
+  {% endif %}
+  AND 1;
