@@ -94,6 +94,9 @@ Token[] format(const scope Token[] tokens)
 		/// and should not be indented).
 		sizediff_t[size_t] tokenIndent;
 
+		/// If set, overrides the parent's .indent for this node.
+		int parentIndentOverride = int.min;
+
 		// If true, the corresponding whiteSpace may be changed to newLine
 		bool[size_t] softLineBreak;
 	}
@@ -442,15 +445,15 @@ Token[] format(const scope Token[] tokens)
 									(ref const TokenKeyword t) { context = t.kind ~ "("; },
 									(ref const _) {},
 								);
-							if (context.among("JOIN(", "USING(") && stack[$-1].type == "JOIN")
-								stack[$-1].indent = 0;
 							auto n = stackInsert(Level.parensOuter, context);
 							n.indent = n.tokenIndent[tokenIndex] = 0;
+							if (context.among("JOIN(", "USING(") && stack[$-2].type == "JOIN")
+								n.parentIndentOverride = 0;
+							if (context == "IN(")
+								n.parentIndentOverride = 0;
 							n = stackPush_(Level.parensInner, context);
 							n.tokenIndent[tokenIndex] = 0;
 							n.softLineBreak[tokenIndex + 1] = true;
-							if (context == "IN(")
-								stack[$-3].tokenIndent[tokenIndex] = 0;
 							break;
 						case ")":
 							auto n = stackExit(Level.parensInner, "( ... )");
@@ -821,11 +824,15 @@ Token[] format(const scope Token[] tokens)
 				// Process the child
 				if (childIndex < n.children.length)
 				{
-					auto childIndent = n.tokenIndent.get(i, n.indent);
+					auto child = n.children[childIndex];
+					auto childIndent = n.indent;
+					if (child.parentIndentOverride != typeof(*child).init.parentIndentOverride)
+						childIndent = child.parentIndentOverride;
+
 					currentIndent += childIndent;
 					scope(success) currentIndent -= childIndent;
 
-					scan(n.children[childIndex]);
+					scan(child);
 				}
 			}
 
