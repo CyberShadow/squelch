@@ -46,8 +46,6 @@ Token[] format(const scope Token[] tokens)
 		when,
 		case_,
 
-		as,
-
 		// Technically not a binary operator, but acts like a low-priority one
 		comma,
 
@@ -264,26 +262,6 @@ Token[] format(const scope Token[] tokens)
 					{
 						case "AS":
 							wsPre = wsPost = WhiteSpace.space;
-							if (tokenIndex + 1 < tokens.length
-								&& tokens[tokenIndex + 1].match!(
-									(ref const TokenIdentifier t) => true,
-									(ref const _) => false
-								)
-								&& stack.retro
-								.find!(n => n.level >= Level.select)
-								.front
-								.level == Level.select
-								&& tokenIndex > 0
-								&& !tokens[tokenIndex - 1].match!(
-									(ref const TokenKeyword t) => t.kind == "WITH OFFSET",
-									(ref const _) => false
-								)
-							)
-							{
-								auto n = stackInsertBinary(Level.as, t.kind);
-								if (n.start + 1 < tokenIndex) // non-trivial
-									wsPre = WhiteSpace.newLine;
-							}
 							break;
 						case "NOT":
 						case "IS":
@@ -854,26 +832,6 @@ Token[] format(const scope Token[] tokens)
 
 		assert(currentIndent == 0);
 		assert(i == root.end);
-	}
-
-	// Style tweak: add blank lines surrounding AS blocks
-	{
-		void adjust(Node* n)
-		{
-			foreach (childIndex, child; n.children)
-			{
-				if (n.level == Level.comma
-					&& child.level == Level.as
-					&& whiteSpace[child.start] >= WhiteSpace.newLine
-					&& child.indent /* was not cleared */)
-				{
-					whiteSpace[child.start].maximize(WhiteSpace.blankLine);
-					whiteSpace[child.end == n.end ? n.end : child.end + 1].maximize(WhiteSpace.blankLine);
-				}
-				adjust(child);
-			}
-		}
-		adjust(&root);
 	}
 
 	// Style tweak: remove space on the inside of ( and )
