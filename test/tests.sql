@@ -278,7 +278,7 @@ FROM
   FOO
   JOIN bar
     ON
-        baz
+          baz
       AND quuz
       AND x BETWEEN y AND z
       AND xyzzy
@@ -309,7 +309,7 @@ SELECT
 SELECT
   1
 WHERE
-    x.x = x.x
+      x.x = x.x
   AND FUN(x.x) BETWEEN x.x AND x.x;
 
 SELECT
@@ -445,13 +445,13 @@ WINDOW
 SELECT
   CASE
     WHEN x_x_x IN (
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6'
-      )
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6'
+    )
       THEN y
     ELSE y
   END AS x_x_x_x;

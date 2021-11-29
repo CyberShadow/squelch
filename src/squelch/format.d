@@ -79,7 +79,7 @@ Token[] format(const scope Token[] tokens)
 		size_t start, end;
 
 		/// Default indentation level.
-		byte indent = indentationWidth;
+		sizediff_t indent = indentationWidth;
 
 		/// Don't indent unless this node contains line breaks
 		bool conditionalIndent;
@@ -90,7 +90,7 @@ Token[] format(const scope Token[] tokens)
 		/// Indentation level overrides for specific tokens
 		/// (mainly for tokens are part of this node's syntax,
 		/// and should not be indented).
-		byte[size_t] tokenIndent;
+		sizediff_t[size_t] tokenIndent;
 
 		// If true, the corresponding whiteSpace may be changed to newLine
 		bool[size_t] softLineBreak;
@@ -219,6 +219,7 @@ Token[] format(const scope Token[] tokens)
 			{
 				wsPre = wsPost = WhiteSpace.space;
 				auto n = stackInsert(level, type);
+				n.indent.maximize(type.length + 1);
 				n.tokenIndent[tokenIndex] = 0;
 				n.conditionalIndent = true;
 				n.softLineBreak[tokenIndex] = true;
@@ -662,10 +663,8 @@ Token[] format(const scope Token[] tokens)
 		);
 	}
 
-	// Convert nested hierarchy into flattened whitespace.
-	auto indent = new int[tokens.length + 1];
+	// Convert soft breaks into spaces or newlines, depending on local complexity
 	{
-		int currentIndent;
 		size_t i = 0;
 
 		int scan(Node* n)
@@ -677,16 +676,11 @@ Token[] format(const scope Token[] tokens)
 			foreach (childIndex; 0 .. n.children.length + 1)
 			{
 				// Process the gap before this child
-				// auto gapStart = i;
 				auto gapEnd = childIndex < n.children.length ? n.children[childIndex].start : n.end;
 				while (true)
 				{
 					if (i < gapEnd)
-					{
-						indent[i] = currentIndent + n.indent;
-
 						complexity += typicalLength(i);
-					}
 
 					// A newline belongs to the inner-most node which fully contains it
 					if (i > n.start && i < n.end)
@@ -701,17 +695,8 @@ Token[] format(const scope Token[] tokens)
 
 				// Process the child
 				if (childIndex < n.children.length)
-				{
-					currentIndent += n.indent;
-					scope(success) currentIndent -= n.indent;
-
 					complexity += scan(n.children[childIndex]);
-				}
 			}
-
-			// Apply per-token indents at this level
-			foreach (tokenIndex, tokenIndent; n.tokenIndent)
-				indent[tokenIndex] += tokenIndent - n.indent;
 
 			if (complexity >= maxLineComplexity)
 			{
@@ -726,14 +711,82 @@ Token[] format(const scope Token[] tokens)
 				}
 				breakNode(n);
 			}
-			else
-			{
-				// Remove gratuitous indent from single-line tokens
-				if (n.conditionalIndent)
-					indent[n.start] -= n.tokenIndent.get(n.start, n.indent);
-			}
 
 			return complexity;
+		}
+		scan(&root);
+	}
+
+	// Decide if we want to apply indentation on a per-node basis.
+	{
+		size_t i = 0;
+
+		bool scan(Node* n)
+		in (i == n.start)
+		out(; i == n.end)
+		{
+			bool hasLineBreaks;
+
+			foreach (childIndex; 0 .. n.children.length + 1)
+			{
+				// Process the gap before this child
+				auto gapEnd = childIndex < n.children.length ? n.children[childIndex].start : n.end;
+				while (i < gapEnd)
+				{
+					if (i > n.start)
+						hasLineBreaks |= whiteSpace[i] >= WhiteSpace.newLine;
+					i++;
+				}
+
+				// Process the child
+				if (childIndex < n.children.length)
+					hasLineBreaks |= scan(n.children[childIndex]);
+			}
+
+			if (n.conditionalIndent)
+				if (!(hasLineBreaks && whiteSpace[n.start] >= WhiteSpace.newLine))
+				{
+					// We decided to not indent this node, clear its indentation information
+					n.indent = 0;
+					n.tokenIndent = null;
+				}
+
+			return hasLineBreaks;
+		}
+		scan(&root);
+	}
+
+	// Convert nested hierarchy into flattened indentation.
+	auto indent = new sizediff_t[tokens.length + 1];
+	{
+		int currentIndent;
+		size_t i = 0;
+
+		void scan(Node* n)
+		in (i == n.start)
+		out(; i == n.end)
+		{
+			foreach (childIndex; 0 .. n.children.length + 1)
+			{
+				// Process the gap before this child
+				// auto gapStart = i;
+				auto gapEnd = childIndex < n.children.length ? n.children[childIndex].start : n.end;
+				while (i < gapEnd)
+					indent[i++] = currentIndent + n.indent;
+
+				// Process the child
+				if (childIndex < n.children.length)
+				{
+					currentIndent += n.indent;
+					scope(success) currentIndent -= n.indent;
+
+					scan(n.children[childIndex]);
+				}
+			}
+
+			// Apply per-token indents at this level
+			foreach (tokenIndex, tokenIndent; n.tokenIndent)
+				indent[tokenIndex] += tokenIndent - n.indent;
 		}
 		scan(&root);
 
