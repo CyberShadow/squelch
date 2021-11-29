@@ -368,7 +368,14 @@ SELECT
   x OVER (PARTITION BY a, b, c),
   y OVER (
     PARTITION BY
-      a, b, c, d, e, f, g, h
+      a,
+      b,
+      c,
+      d,
+      e,
+      f,
+      g,
+      h
   ),
   z OVER (
     PARTITION BY
@@ -418,7 +425,9 @@ SELECT
 WINDOW
   x_x AS (
     PARTITION BY
-      x, x, x_x_x
+      x,
+      x,
+      x_x_x
     ORDER BY
       x_x ASC
     ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING

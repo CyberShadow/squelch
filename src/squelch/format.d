@@ -82,8 +82,8 @@ Token[] format(const scope Token[] tokens)
 		/// Default indentation level.
 		byte indent = 1;
 
-		/// Complexity bias, to allow matching complexity of some nested structures.
-		int complexityBias = 0;
+		/// If true, and the parent has its soft line breaks applied, do so here too
+		bool breakWithParent;
 
 		/// Indentation level overrides for specific tokens
 		/// (mainly for tokens are part of this node's syntax,
@@ -436,7 +436,7 @@ Token[] format(const scope Token[] tokens)
 							auto n = stackInsert(Level.comma, t.text);
 							n.indent = 0;
 							n.tokenIndent[tokenIndex] = 0;
-							n.complexityBias = 2; // Match complexity of parens
+							n.breakWithParent = true;
 
 							if (stack[$-2].type == "<")
 								wsPost = WhiteSpace.space;
@@ -606,7 +606,7 @@ Token[] format(const scope Token[] tokens)
 		in (i == n.start)
 		out(; i == n.end)
 		{
-			int complexity = n.complexityBias;
+			int complexity = 0;
 
 			foreach (childIndex; 0 .. n.children.length + 1)
 			{
@@ -650,8 +650,15 @@ Token[] format(const scope Token[] tokens)
 			if (complexity >= maxLineComplexity)
 			{
 				// Do a second pass, converting soft line breaks to hard
-				foreach (i, _; n.softLineBreak)
-					whiteSpace[i].maximize(WhiteSpace.newLine);
+				void breakNode(Node* n)
+				{
+					foreach (i, _; n.softLineBreak)
+						whiteSpace[i].maximize(WhiteSpace.newLine);
+					foreach (child; n.children)
+						if (child.breakWithParent)
+							breakNode(child);
+				}
+				breakNode(n);
 			}
 
 			return complexity;
