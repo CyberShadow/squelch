@@ -663,20 +663,23 @@ Token[] format(const scope Token[] tokens)
 	Token[] result;
 	foreach (i; 0 .. tokens.length)
 	{
-		final switch (whiteSpace[i])
-		{
-			case WhiteSpace.none:
-				break;
-			case WhiteSpace.space:
-				result ~= Token(TokenWhiteSpace(" "));
-				break;
-			case WhiteSpace.blankLine:
-				result ~= Token(TokenWhiteSpace("\n"));
-				goto case;
-			case WhiteSpace.newLine:
-				result ~= Token(TokenWhiteSpace((i ? "\n" : "") ~ indentation.replicate(indent[i].max(0))));
-				break;
-		}
+		if (i)
+			final switch (whiteSpace[i])
+			{
+				case WhiteSpace.none:
+					break;
+				case WhiteSpace.space:
+					result ~= Token(TokenWhiteSpace(" "));
+					break;
+				case WhiteSpace.blankLine:
+					result ~= Token(TokenWhiteSpace("\n"));
+					goto case;
+				case WhiteSpace.newLine:
+					result ~= Token(TokenWhiteSpace("\n" ~ indentation.replicate(indent[i].max(0))));
+					break;
+			}
+		else
+			result ~= Token(TokenWhiteSpace(indentation.replicate(indent[i].max(0)))); // Pedantic - should always be 0
 		result ~= tokens[i];
 	}
 
