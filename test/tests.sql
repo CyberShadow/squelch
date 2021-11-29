@@ -469,8 +469,7 @@ SELECT
     WHEN x_x AND x_x_x <= x_x
       THEN STRUCT(0.0 AS x, x_x_x AS x)
     -- x
-    WHEN
-        x_x > '' AND x_x_x_x_x > 0
+    WHEN x_x > '' AND x_x_x_x_x > 0
       THEN STRUCT(x_x_x AS x, 0.0 AS x)
     -- x
     ELSE STRUCT(0.0 AS x, 0.0 AS x)
