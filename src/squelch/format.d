@@ -650,7 +650,7 @@ Token[] format(const scope Token[] tokens)
 	}
 
 	// Comments generally describe the thing below them,
-	// so should be aligned accordingly
+	// so evict them out of blocks if they are on the border.
 	{
 		void adjust(Node* n)
 		{
@@ -658,12 +658,8 @@ Token[] format(const scope Token[] tokens)
 				(ref const TokenComment t) => true,
 				(ref const _) => false
 			);
-			while (n.start && isComment(tokens[n.start - 1]))
-			{
-				n.start--;
-				if (n.start + 1 in n.tokenIndent)
-					n.tokenIndent[n.start] = n.tokenIndent[n.start + 1];
-			}
+			while (n.start < n.end && isComment(tokens[n.start]))
+				n.start++;
 			while (n.end > n.start && isComment(tokens[n.end - 1]))
 				n.end--;
 			foreach (child; n.children)
@@ -709,7 +705,7 @@ Token[] format(const scope Token[] tokens)
 
 	// Convert soft breaks into spaces or newlines, depending on local complexity
 	{
-		size_t i = 0;
+		size_t i = root.start;
 
 		int scan(Node* n)
 		in (i == n.start)
@@ -763,7 +759,7 @@ Token[] format(const scope Token[] tokens)
 
 	// Decide if we want to apply indentation on a per-node basis.
 	{
-		size_t i = 0;
+		size_t i = root.start;
 
 		bool scan(Node* n)
 		in (i == n.start)
@@ -804,7 +800,7 @@ Token[] format(const scope Token[] tokens)
 	auto indent = new sizediff_t[tokens.length + 1];
 	{
 		int currentIndent;
-		size_t i = 0;
+		size_t i = root.start;
 
 		void scan(Node* n)
 		in (i == n.start)
@@ -835,6 +831,7 @@ Token[] format(const scope Token[] tokens)
 		scan(&root);
 
 		assert(currentIndent == 0);
+		assert(i == root.end);
 	}
 
 	// Style tweak: add blank lines surrounding AS blocks

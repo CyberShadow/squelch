@@ -551,3 +551,12 @@ SELECT
   CAST(
     x_x_x_x_x_x_x_x_x_x AS STRING
   );
+
+SELECT
+  -- x
+         x_x > 'x'
+         -- x
+     AND x_x_x_x_x > 0
+         -- x
+     AND x_x IS NULL
+  OR x_x IN UNNEST(x_x_x);
