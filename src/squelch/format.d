@@ -270,10 +270,10 @@ Token[] format(const scope Token[] tokens)
 							goto case "WHERE";
 						case "BY":
 							if (stack
-								.map!(n => n.type)
 								.retro
-								.find!(type => type != "BY-inline")
+								.find!(n => n.level >= Level.parensInner)
 								.front
+								.type
 								.among("OVER(", "AS("))
 							{
 								wsPre = wsPost = WhiteSpace.space;
@@ -306,7 +306,7 @@ Token[] format(const scope Token[] tokens)
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							auto n = stackEnter(Level.select, t.kind);
+							auto n = stackEnter(Level.select, t.kind, true);
 							n.tokenIndent[tokenIndex] = 0;
 							n.softLineBreak[tokenIndex] = true;
 							break;

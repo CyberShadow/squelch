@@ -248,7 +248,10 @@ FROM
   Produce
 WINDOW
   item_window AS (
-    PARTITION BY category ORDER BY purchases
+    PARTITION BY
+      category
+    ORDER BY
+      purchases
     ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
   );
 
@@ -409,3 +412,14 @@ FROM
   LEFT JOIN x
     ON
       st.market = tr.market;
+
+SELECT
+  1
+WINDOW
+  x_x AS (
+    PARTITION BY
+      x, x, x_x_x
+    ORDER BY
+      x_x ASC
+    ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING
+  );
