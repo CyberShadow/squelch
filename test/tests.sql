@@ -222,7 +222,9 @@ SELECT
   );
 
 SELECT
-  x * (1 - x) * ((x * x) / (1 + x) - x - x);
+  x
+  * (1 - x)
+  * ((x * x) / (1 + x) - x - x);
 
 {# comment1 #}
 {# comment2 #}
@@ -328,12 +330,15 @@ WINDOW
   y AS (PARTITION BY b ORDER BY c DESC);
 
 SELECT
-  x / AVG(x) OVER (PARTITION BY x, y) AS z
+  x
+  / AVG(x) OVER (PARTITION BY x, y) AS z
 FROM
   foo;
 
 SELECT
-  XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123) / 123 * 123 AS xxxxx_yyyyy_xxxxx;
+  XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123)
+  / 123
+  * 123 AS xxxxx_yyyyy_xxxxx;
 
 SELECT
   IFNULL(
@@ -440,13 +445,13 @@ WINDOW
 SELECT
   CASE
     WHEN x_x_x IN (
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6'
-    )
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6'
+      )
       THEN y
     ELSE y
   END AS x_x_x_x;
@@ -493,3 +498,8 @@ SELECT
       NOT ({{ x }})
   {%- endif %}
 ;
+
+SELECT
+  COUNT(x_x) OVER (PARTITION BY a_a_a_a_a_a_a)
+FROM
+  x;

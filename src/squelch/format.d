@@ -72,7 +72,6 @@ Token[] format(const scope Token[] tokens)
 	{
 		Level level; /// Nesting / priority level of this node's expression
 		string type; /// A string identifying the specific operation
-		string prevType; /// The previous operation at the same level, when they are consecutive
 
 		Node*[] children; /// If null, then this is a leaf
 
@@ -155,7 +154,6 @@ Token[] format(const scope Token[] tokens)
 				{
 					if (glueBackwards)
 					{
-						stack[$-1].prevType = stack[$-1].type;
 						stack[$-1].type = type;
 						return stack[$-1];
 					}
@@ -185,7 +183,6 @@ Token[] format(const scope Token[] tokens)
 				if (stack[$-1].level == level)
 				{
 					// Implicitly glue backwards
-					stack[$-1].prevType = stack[$-1].type;
 					stack[$-1].type = type;
 				}
 				else
@@ -214,6 +211,17 @@ Token[] format(const scope Token[] tokens)
 				return stack[$-1];
 			}
 
+			// Common routine for creating nodes for binary operators
+			Node* stackInsertBinary(Level level, string type)
+			{
+				wsPre = wsPost = WhiteSpace.space;
+				auto n = stackInsert(level, type);
+				n.tokenIndent[tokenIndex] = 0;
+				n.tokenIndent[n.start] = 0; // Don't indent first token
+				n.softLineBreak[tokenIndex] = true;
+				return n;
+			}
+
 			token.match!(
 				(ref const TokenWhiteSpace t)
 				{
@@ -231,8 +239,6 @@ Token[] format(const scope Token[] tokens)
 					{
 						case "AS":
 						case "NOT":
-						case "LIKE":
-						case "IN":
 						case "IS":
 						case "OVER":
 						case "RETURNS":
@@ -241,24 +247,28 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "BETWEEN":
-							stackInsert(Level.comparison, "BETWEEN");
+						case "LIKE":
+						case "IN":
+							auto n = stackInsertBinary(Level.comparison, t.kind);
+							n.softLineBreak.remove(tokenIndex);
 							goto case "AS";
 						case "AND":
-						case "OR":
 							wsPre = wsPost = WhiteSpace.space;
-							auto n = stackInsert(Level.comparison, t.kind);
-							n.indent = 0;
-							if (n.prevType == "BETWEEN")
+							stackPopTo(Level.comparison);
+							if (stack[$-1].type == "BETWEEN")
 							{
+								auto n = stackInsert(Level.comparison, t.kind);
+								n.indent = 0;
 								n.tokenIndent[tokenIndex] = 0;
 								break;
 							}
+							stackInsertBinary(Level.and, t.kind);
 							if (stack[$-2].level == Level.select || stack[$-2].level == Level.on)
 								wsPre = WhiteSpace.newLine;
-							else
-								wsPre = WhiteSpace.space;
 							return;
-
+						case "OR":
+							stackInsertBinary(Level.or, t.kind);
+							break;
 						case "SELECT":
 							wsPre = wsPost = WhiteSpace.newLine;
 							auto n = stackEnter(Level.select, t.text);
@@ -475,9 +485,40 @@ Token[] format(const scope Token[] tokens)
 								wsPre = WhiteSpace.space;
 								break;
 							}
-							goto default;
+							goto case "/";
+
+						// Binary operators and others
+						case "=":
+						case "<":
+						case ">":
+						case "<=":
+						case ">=":
+						case "!=":
+						case "<>":
+							stackInsertBinary(Level.comparison, t.text);
+							break;
+						case "|":
+							stackInsertBinary(Level.bitwiseOr, t.text);
+							break;
+						case "^":
+							stackInsertBinary(Level.bitwiseXor, t.text);
+							break;
+						case "&":
+							stackInsertBinary(Level.bitwiseAnd, t.text);
+							break;
+						case "<<":
+						case ">>":
+							stackInsertBinary(Level.shift, t.text);
+							break;
+						case "-":
+						case "+":
+							stackInsertBinary(Level.addition, t.text);
+							break;
+						case "/":
+						case "||":
+							stackInsertBinary(Level.multiplication, t.text);
+							break;
 						default:
-							// Binary operators and others
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 					}
@@ -556,7 +597,7 @@ Token[] format(const scope Token[] tokens)
 				},
 			);
 
-			whiteSpace[tokenIndex] = max(whiteSpace[tokenIndex], wsPre);
+			whiteSpace[tokenIndex].maximize(wsPre);
 			if (!whiteSpace[tokenIndex] && wasWord && isWord)
 				whiteSpace[tokenIndex] = WhiteSpace.space;
 
