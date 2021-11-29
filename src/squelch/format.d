@@ -860,7 +860,7 @@ Token[] format(const scope Token[] tokens)
 					&& child.indent /* was not cleared */)
 				{
 					whiteSpace[child.start].maximize(WhiteSpace.blankLine);
-					whiteSpace[child.end + 1].maximize(WhiteSpace.blankLine);
+					whiteSpace[child.end == n.end ? n.end : child.end + 1].maximize(WhiteSpace.blankLine);
 				}
 				adjust(child);
 			}
