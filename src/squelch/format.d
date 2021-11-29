@@ -687,7 +687,6 @@ Token[] format(const scope Token[] tokens)
 		scan(&root);
 
 		assert(currentIndent == 0);
-		assert(i == tokens.length);
 	}
 
 	// Style tweak: remove space on the inside of ( and )
