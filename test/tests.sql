@@ -222,7 +222,7 @@ SELECT
   );
 
 SELECT
-  x
+    x
   * (1 - x)
   * ((x * x) / (1 + x) - x - x);
 
@@ -278,7 +278,7 @@ FROM
   FOO
   JOIN bar
     ON
-      baz
+        baz
       AND quuz
       AND x BETWEEN y AND z
       AND xyzzy
@@ -309,7 +309,7 @@ SELECT
 SELECT
   1
 WHERE
-  x.x = x.x
+    x.x = x.x
   AND FUN(x.x) BETWEEN x.x AND x.x;
 
 SELECT
@@ -330,13 +330,13 @@ WINDOW
   y AS (PARTITION BY b ORDER BY c DESC);
 
 SELECT
-  x
+    x
   / AVG(x) OVER (PARTITION BY x, y) AS z
 FROM
   foo;
 
 SELECT
-  XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123)
+    XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123)
   / 123
   * 123 AS xxxxx_yyyyy_xxxxx;
 

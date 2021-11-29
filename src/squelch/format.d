@@ -81,6 +81,9 @@ Token[] format(const scope Token[] tokens)
 		/// Default indentation level.
 		byte indent = 1;
 
+		/// Don't indent unless this node contains line breaks
+		bool conditionalIndent;
+
 		/// If true, and the parent has its soft line breaks applied, do so here too
 		bool breakWithParent;
 
@@ -217,7 +220,7 @@ Token[] format(const scope Token[] tokens)
 				wsPre = wsPost = WhiteSpace.space;
 				auto n = stackInsert(level, type);
 				n.tokenIndent[tokenIndex] = 0;
-				n.tokenIndent[n.start] = 0; // Don't indent first token
+				n.conditionalIndent = true;
 				n.softLineBreak[tokenIndex] = true;
 				return n;
 			}
@@ -660,7 +663,7 @@ Token[] format(const scope Token[] tokens)
 	}
 
 	// Convert nested hierarchy into flattened whitespace.
-	auto indent = new int[tokens.length];
+	auto indent = new int[tokens.length + 1];
 	{
 		int currentIndent;
 		size_t i = 0;
@@ -722,6 +725,12 @@ Token[] format(const scope Token[] tokens)
 							breakNode(child);
 				}
 				breakNode(n);
+			}
+			else
+			{
+				// Remove gratuitous indent from single-line tokens
+				if (n.conditionalIndent)
+					indent[n.start] -= n.tokenIndent.get(n.start, n.indent);
 			}
 
 			return complexity;
