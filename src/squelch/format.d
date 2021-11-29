@@ -42,14 +42,14 @@ Token[] format(const scope Token[] tokens)
 		and,
 		or,
 
-		// Technically not a binary operator, but acts like a low-priority one
-		comma,
-
-		// Things like SELECT go here
 		then,
 		when,
 		case_,
 
+		// Technically not a binary operator, but acts like a low-priority one
+		comma,
+
+		// Things like SELECT go here
 		with_,
 		on,
 		join,

@@ -395,3 +395,11 @@ SELECT DISTINCT AS STRUCT
   y
 FROM
   t;
+
+SELECT
+  1,
+  CASE
+    WHEN x = 1 THEN 1
+    WHEN x = 2 THEN 2
+    ELSE 0
+  END;
