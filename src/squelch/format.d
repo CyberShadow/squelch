@@ -1,14 +1,15 @@
 module squelch.format;
 
-import std.algorithm.comparison;
+import std.algorithm.comparison : among, max;
 import std.algorithm.iteration : map;
 import std.algorithm.searching;
-import std.array;
+import std.array : replicate, split;
 import std.exception;
-import std.range;
-import std.stdio : File;
-import std.string;
+import std.range : retro;
+import std.string : strip;
 import std.sumtype : match;
+
+static import std.string;
 
 import ae.utils.array : elementIndex;
 import ae.utils.math : maximize;
@@ -23,18 +24,80 @@ enum indentation = "  ";
 
 Token[] format(const scope Token[] tokens)
 {
+	// Lexical priorities
+	enum Level
+	{
+		// https://cloud.google.com/bigquery/docs/reference/standard-sql/operators
+		parensOuter, /// function call, subscript
+		// unary,
+		// Binary operators - highest priority:
+		multiplication,
+		addition,
+		shift,
+		bitwiseAnd,
+		bitwiseXor,
+		bitwiseOr,
+		comparison,
+		// not,
+		and,
+		or,
+
+		// Technically not a binary operator, but acts like a low-priority one
+		comma,
+
+		// Things like SELECT go here
+		then,
+		when,
+		case_,
+
+		with_,
+		on,
+		join,
+		select,
+		union_,
+		statement = union_,
+
+		// A closing paren unambiguously terminates all other lexical constructs
+		parensInner,
+
+		// Dbt macros form their own independent hierarchy
+		dbt,
+
+		// Lowest priority - terminates all constructs
+		file,
+	}
+
 	/// Tree node.
 	static struct Node
 	{
-		string type;
-		int indent = 1;
+		Level level; /// Nesting / priority level of this node's expression
+		string type; /// A string identifying the specific operation
+		string prevType; /// The previous operation at the same level, when they are consecutive
 
 		Node*[] children; /// If null, then this is a leaf
 
 		/// Covered tokens.
 		size_t start, end;
+
+		/// Default indentation level.
+		byte indent = 1;
+
+		/// Complexity bias, to allow matching complexity of some nested structures.
+		int complexityBias = 0;
+
+		/// Indentation level overrides for specific tokens
+		/// (mainly for tokens are part of this node's syntax,
+		/// and should not be indented).
+		byte[size_t] tokenIndent;
+
+		// If true, the corresponding whiteSpace may be changed to newLine
+		bool[size_t] softLineBreak;
 	}
-	Node root = { indent : 0 };
+	Node root = {
+		level : Level.file,
+		type : "file",
+		indent : false,
+	};
 
 	enum WhiteSpace
 	{
@@ -46,9 +109,6 @@ Token[] format(const scope Token[] tokens)
 	// whiteSpace[i] is what whitespace we should add before tokens[i]
 	auto whiteSpace = new WhiteSpace[tokens.length + 1];
 
-	// If true, the corresponding whiteSpace may be changed to newLine
-	auto softLineBreak = new bool[tokens.length + 1];
-
 	// First pass
 	{
 		Node*[] stack = [&root];
@@ -57,26 +117,81 @@ Token[] format(const scope Token[] tokens)
 		foreach (ref token; tokens)
 		{
 			WhiteSpace wsPre, wsPost;
-			void delegate()[] post;
 			bool isWord;
 
 			size_t tokenIndex = tokens.elementIndex(token);
 
-			void stackPush(string type, int indent = 1)
+			Node* stackPush_(Level level, string type)
 			{
 				auto n = new Node;
+				n.level = level;
 				n.type = type;
-				n.indent = indent;
 				n.start = tokenIndex;
 
 				stack[$-1].children ~= n;
 				stack ~= n;
+				return n;
 			}
 
-			void stackPop()
+			Node* stackPop_(bool afterCurrent)
 			{
-				stack[$-1].end = tokenIndex;
+				auto n = stack[$-1];
+				n.end = tokenIndex + afterCurrent;
 				stack = stack[0 .. $-1];
+				return n;
+			}
+
+			void stackPopTo(Level level)
+			{
+				while (stack[$-1].level < level)
+					stackPop_(false);
+			}
+
+			Node* stackExit(Level level, string expected)
+			{
+				stackPopTo(level);
+				enforce(stack[$-1].level == level, std.string.format!
+					"Found end of %s while looking for end of %s"(
+					stack[$-1].type, expected));
+				return stackPop_(true);
+			}
+
+			Node* stackInsert(Level level, string type, bool extendBackwards)
+			{
+				stackPopTo(level);
+
+				if (stack[$-1].level == level)
+				{
+					stack[$-1].prevType = stack[$-1].type;
+					stack[$-1].type = type;
+				}
+				else
+				{
+					auto p = stack[$-1];
+					Node*[] children;
+
+					// Move the previous hierarchy into the new inserted level
+					{
+						auto i = p.children.length;
+						while (i && p.children[i-1].level < level)
+							i--;
+						children = p.children[i .. $];
+						p.children = p.children[0 .. i];
+					}
+
+					auto n = stackPush_(level, type);
+					n.children = children;
+					n.start = children.length ? children[0].start : tokenIndex;
+
+					if (extendBackwards)
+					{
+						// Extend the start backwards to adopt non-syntax tokens
+						auto limit = p.children.length > 1 ? p.children[$-2].end : p.start;
+						while (n.start > limit && (n.start - 1) !in p.tokenIndent && (n.start) !in p.softLineBreak)
+							n.start--;
+					}
+				}
+				return stack[$-1];
 			}
 
 			token.match!(
@@ -91,6 +206,7 @@ Token[] format(const scope Token[] tokens)
 				(ref const TokenKeyword t)
 				{
 					isWord = true;
+
 					switch (t.kind)
 					{
 						case "AS":
@@ -99,54 +215,51 @@ Token[] format(const scope Token[] tokens)
 						case "IN":
 						case "IS":
 						case "OVER":
-						case "THEN":
 						case "RETURNS":
 						case "IGNORE":
 						case "USING":
 							wsPre = wsPost = WhiteSpace.space;
 							break;
 						case "BETWEEN":
-							post ~= { stackPush("BETWEEN", 0); };
+							stackInsert(Level.comparison, "BETWEEN", true);
 							goto case "AS";
 						case "AND":
 						case "OR":
-							if (stack[$-1].type == "BETWEEN")
+							wsPre = wsPost = WhiteSpace.space;
+							auto n = stackInsert(Level.comparison, t.kind, true);
+							n.indent = 0;
+							if (n.prevType == "BETWEEN")
 							{
-								stackPop();
-								goto case "AS";
+								n.tokenIndent[tokenIndex] = 0;
+								break;
 							}
-							wsPost = WhiteSpace.space;
-							if (stack[$-1].type == "SELECT" || stack[$-1].type == "JOIN")
+							if (stack[$-2].level == Level.select || stack[$-2].level == Level.on)
 								wsPre = WhiteSpace.newLine;
 							else
-							// if (stack.length && stack[$-1].endsWith("("))
-							// {
-							// 	wsPre = wsPost = WhiteSpace.softNewLine;
-							// 	outdent = true;
-							// }
-							// else
 								wsPre = WhiteSpace.space;
 							return;
 
 						case "SELECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							if (stack[$-1].type == "WITH")
-								stackPop();
-							post ~= { stackPush("SELECT"); };
+							auto n = stackInsert(Level.select, t.text, false);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "FROM":
 							if (stack[$-1].type == "EXTRACT(")
 								return;
 							goto case "WHERE";
 						case "BY":
-							if (stack[$-1].type == "OVER(" || stack.map!(n => n.type).endsWith(["OVER(", "BY"]) ||
-								stack[$-1].type == "AS(" || stack.map!(n => n.type).endsWith(["AS(", "BY"]))
+							if (stack
+								.map!(n => n.type)
+								.retro
+								.find!(type => type != "BY-inline")
+								.front
+								.among("OVER(", "AS("))
 							{
 								wsPre = wsPost = WhiteSpace.space;
-								softLineBreak[tokenIndex] = softLineBreak[tokenIndex + 1] = true;
-								if (stack[$-1].type == "BY")
-									stackPop();
-								post ~= { stackPush("BY"); };
+								auto n = stackInsert(Level.select, "BY-inline", false);
+								n.tokenIndent[tokenIndex] = 0;
+								n.softLineBreak[tokenIndex] = n.softLineBreak[tokenIndex + 1] = true;
 								return;
 							}
 							goto case "WHERE";
@@ -155,31 +268,27 @@ Token[] format(const scope Token[] tokens)
 						case "QUALIFY":
 						case "WINDOW":
 							wsPre = wsPost = WhiteSpace.newLine;
-							while (stack[$-1].type == "JOIN")
-								stackPop();
-							if (stack[$-1].type == "SELECT")
-								stackPop();
-							post ~= { stackPush("SELECT"); };
+							auto n = stackInsert(Level.select, t.text, false);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "JOIN":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							while (stack[$-1].type == "JOIN")
-								stackPop();
-							post ~= { stackPush("JOIN"); };
+							stackPopTo(Level.join);
+							auto n = stackInsert(Level.join, t.kind, false);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "ON":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stackPush("JOIN"); };
+							auto n = stackInsert(Level.on, t.kind, false);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
-							while (stack[$-1].type == "JOIN")
-								stackPop();
-							if (stack[$-1].type.among("SELECT", "BY"))
-								stackPop();
-							post ~= { stackPush("SELECT"); };
+							auto n = stackInsert(Level.select, t.kind, false);
+							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex] = true;
 							break;
 						case "EXCEPT":
 							if (tokenIndex && tokens[tokenIndex - 1] == Token(TokenOperator("*")))
@@ -188,29 +297,42 @@ Token[] format(const scope Token[] tokens)
 						case "UNION":
 						case "INTERSECT":
 							wsPre = wsPost = WhiteSpace.newLine;
-							while (stack[$-1].type == "JOIN")
-								stackPop();
-							if (stack[$-1].type == "SELECT")
-								stackPop();
-							stackPush("UNION", -1);
-							post ~= { stackPop(); };
+							auto n = stackInsert(Level.union_, t.text, false);
+							n.indent = 0;
+							n.tokenIndent[tokenIndex] = -1;
 							break;
 						case "WITH":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stackPush("WITH"); };
+							auto n = stackInsert(Level.select, t.text, false);
+							n.tokenIndent[tokenIndex] = 0;
+							break;
+						case "CREATE":
+							wsPre = WhiteSpace.newLine;
+							auto n = stackInsert(Level.select, t.text, false);
+							n.indent = 0;
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "CASE":
 							wsPre = wsPost = WhiteSpace.newLine;
-							post ~= { stackPush("CASE"); };
+							auto n = stackInsert(Level.case_, t.text, false);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "WHEN":
 						case "ELSE":
 							wsPre = WhiteSpace.newLine;
+							auto n = stackInsert(Level.when, t.text, false);
+							n.tokenIndent[tokenIndex] = 0;
+							break;
+						case "THEN":
+							wsPre = wsPost = WhiteSpace.space;
+							auto n = stackInsert(Level.then, t.text, false);
+							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex] = true;
 							break;
 						case "END":
 							wsPre = WhiteSpace.newLine;
-							if (stack[$-1].type == "CASE")
-								stackPop();
+							auto n = stackExit(Level.case_, "CASE ... END");
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						default:
 							break;
@@ -245,7 +367,6 @@ Token[] format(const scope Token[] tokens)
 						case ".":
 							break;
 						case "(":
-							softLineBreak[tokenIndex + 1] = true;
 							string context = "(";
 							if (tokenIndex)
 								tokens[tokenIndex - 1].match!(
@@ -253,16 +374,20 @@ Token[] format(const scope Token[] tokens)
 									(ref const TokenKeyword t) { context = t.kind ~ "("; },
 									(ref const _) {},
 								);
-							if (stack.length && context.among("JOIN(", "USING(") && stack[$-1].type == "JOIN")
-								stackPop();
-							post ~= { stackPush(context); };
+							if (context.among("JOIN(", "USING(") && stack[$-1].type == "JOIN")
+								stack[$-1].indent = 0;
+							auto n = stackInsert(Level.parensOuter, context, true);
+							n.indent = n.tokenIndent[tokenIndex] = 0;
+							n = stackPush_(Level.parensInner, context);
+							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex + 1] = true;
 							break;
 						case ")":
-							softLineBreak[tokenIndex] = true;
-							while (stack.length && !stack[$-1].type.endsWith("("))
-								stackPop();
-							enforce(stack.length, "Mismatched )");
-							stackPop();
+							auto n = stackExit(Level.parensInner, "( ... )");
+							enforce(n.type.endsWith("("), "Found end of " ~ n.type ~ " while looking for end of ( ... )");
+							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex] = true;
+							stackExit(Level.parensOuter, "( ... )");
 
 							if (tokenIndex + 1 < tokens.length)
 								tokens[tokenIndex + 1].match!(
@@ -273,35 +398,44 @@ Token[] format(const scope Token[] tokens)
 
 							break;
 						case "[":
-							softLineBreak[tokenIndex + 1] = true;
-							post ~= { stackPush("["); };
+							auto n = stackInsert(Level.parensOuter, t.text, true);
+							n.indent = n.tokenIndent[tokenIndex] = 0;
+							n = stackPush_(Level.parensInner, t.text);
+							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex + 1] = true;
 							break;
 						case "]":
-							softLineBreak[tokenIndex] = true;
-							while (stack.length && stack[$-1].type != "[")
-								stackPop();
-							enforce(stack.length, "Mismatched ]");
-							stackPop();
+							auto n = stackExit(Level.parensInner, "[ ... ]");
+							enforce(n.type == "[", "Found end of " ~ n.type ~ " while looking for end of [ ... ]");
+							n.tokenIndent[tokenIndex] = 0;
+							n.softLineBreak[tokenIndex] = true;
+							stackExit(Level.parensOuter, "[ ... ]");
 							break;
 						case ",":
-							if (stack[$-1].type == "<")
+							auto n = stackInsert(Level.comma, t.text, true);
+							n.indent = 0;
+							n.tokenIndent[tokenIndex] = 0;
+							n.complexityBias = 2; // Match complexity of parens
+
+							if (stack[$-2].type == "<")
 								wsPost = WhiteSpace.space;
 							else
-							if (stack[$-1].type == "SELECT")
-								wsPost = WhiteSpace.newLine;
-							else
-							if (stack[$-1].type == "WITH")
+							if (stack[$-2].type == "WITH")
 								wsPost = WhiteSpace.blankLine;
+							else
+							if (stack[$-2].level == Level.select && stack[$-2].type != "BY-inline")
+								wsPost = WhiteSpace.newLine;
 							else
 							{
 								wsPost = WhiteSpace.space;
-								softLineBreak[tokenIndex + 1] = true;
+								n.softLineBreak[tokenIndex + 1] = true;
 							}
 							break;
 						case ";":
 							wsPost = WhiteSpace.blankLine;
-							while (stack[$-1].type == "SELECT" || stack[$-1].type == "WITH" || stack[$-1].type == "JOIN")
-								stackPop();
+							auto n = stackInsert(Level.statement, t.text, true);
+							n.indent = 0;
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "*":
 							if (tokenIndex && tokens[tokenIndex - 1].match!(
@@ -332,13 +466,16 @@ Token[] format(const scope Token[] tokens)
 					final switch (t.text)
 					{
 						case "<":
-							post ~= { stackPush("<"); };
+							auto n = stackInsert(Level.parensOuter, t.text, true);
+							n.indent = n.tokenIndent[tokenIndex] = 0;
+							n = stackPush_(Level.parensInner, t.text);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case ">":
-							while (stack.length && stack[$-1].type != "<")
-								stackPop();
-							enforce(stack.length, "Mismatched >");
-							stackPop();
+							auto n = stackExit(Level.parensInner, "< ... >");
+							enforce(n.type == "<", "Found end of " ~ n.type ~ " while looking for end of < ... >");
+							n.tokenIndent[tokenIndex] = 0;
+							stackExit(Level.parensOuter, "< ... >");
 							break;
 					}
 				},
@@ -359,34 +496,35 @@ Token[] format(const scope Token[] tokens)
 						case "if":
 						case "macro":
 						case "filter":
-							post ~= { stackPush("%" ~ t.kind); };
+							auto n = stackPush_(Level.dbt, "%" ~ t.kind);
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "set":
 							if (!t.text.canFind('='))
-								post ~= { stackPush("%" ~ t.kind); };
+								goto case "for";
 							break;
 						case "elif":
 						case "else":
-						{
-							while (stack.length && !stack[$-1].type.startsWith("%")) stackPop();
-							enforce(stack[$-1].type == "%if" || stack[$-1].type == "%for",
-								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1].type[1..$] : "end-of-file")
+							auto i = stack.countUntil!(n => n.level == Level.dbt);
+							enforce(i >= 0, "Mismatched " ~ t.kind);
+							enforce(stack[i].type == "%if" || stack[i].type == "%for",
+								"Found " ~ t.kind ~ " but expected end" ~ stack[i].type[1..$]
 							);
-							auto context = stack[$-1].type;
-							stackPop();
-							post ~= { stackPush(context); };
+							stack[i].tokenIndent[tokenIndex] = 0;
 							break;
-						}
 						case "endfor":
 						case "endif":
 						case "endmacro":
 						case "endfilter":
 						case "endset":
-							while (stack.length && !stack[$-1].type.startsWith("%")) stackPop();
-							enforce(stack.map!(n => n.type).endsWith("%" ~ t.kind[3 .. $]),
-								"Found " ~ t.kind ~ " but expected " ~ (stack.length ? "end" ~ stack[$-1].type[1..$] : "end-of-file")
+							auto i = stack.countUntil!(n => n.level == Level.dbt);
+							enforce(i >= 0, "Mismatched " ~ t.kind);
+							enforce(stack[i].type.endsWith("%" ~ t.kind[3 .. $]),
+								"Found " ~ t.kind ~ " but expected end" ~ stack[i].type[1..$]
 							);
-							stackPop();
+							stack[i].tokenIndent[tokenIndex] = 0;
+							stack[i].end = tokenIndex + 1;
+							stack = stack[0 .. i] ~ stack[i + 1 .. $];
 							break;
 						default:
 							break;
@@ -403,8 +541,6 @@ Token[] format(const scope Token[] tokens)
 				whiteSpace[tokenIndex] = WhiteSpace.space;
 
 			tokenIndex++;
-			foreach (fun; post)
-				fun();
 
 			whiteSpace[tokenIndex] = wsPost;
 			wasWord = isWord;
@@ -439,54 +575,70 @@ Token[] format(const scope Token[] tokens)
 		);
 	}
 
-	// Convert soft breaks into spaces or newlines, depending on local complexity
+	// Convert nested hierarchy into flattened whitespace.
+	auto indent = new int[tokens.length];
 	{
-		// Calculate local complexity (token count) of paren groups.
-		// We use this information later to decide whether commas and parens should break lines.
-		auto complexity = new size_t[tokens.length];
+		int currentIndent;
+		size_t i = 0;
 
-		size_t[] stack;
-		foreach (tokenIndex, ref token; tokens)
-			token.match!(
-				(ref const TokenOperator t)
-				{
-					switch (t.text)
-					{
-						case "(":
-						case "[":
-							stack ~= tokenIndex;
-							break;
+		int scan(Node* n)
+		in (i == n.start)
+		out(; i == n.end)
+		{
+			int complexity = n.complexityBias;
 
-						case ")":
-						case "]":
-							enforce(stack.length, "Unmatched ( / [");
-
-							int c;
-							foreach (i; stack[$-1] .. tokenIndex + 1)
-								c += typicalLength(i);
-							foreach (i; stack[$-1] .. tokenIndex)
-								if (whiteSpace[i + 1] >= WhiteSpace.newLine)
-									c = int.max; // Forced by e.g. sub-query
-
-							foreach (i; stack[$-1] + 1 .. tokenIndex + 1)
-								if (!complexity[i])
-									complexity[i] = c;
-
-							stack = stack[0 .. $-1];
-							break;
-						default:
-					}
-				},
-				(ref const _) {}
-			);
-
-		foreach (tokenIndex; 0 .. tokens.length + 1)
-			if (softLineBreak[tokenIndex])
+			foreach (childIndex; 0 .. n.children.length + 1)
 			{
-				auto c = complexity[tokenIndex];
-				if (c >= maxLineComplexity)
-					whiteSpace[tokenIndex] = WhiteSpace.newLine;
+				// Process the gap before this child
+				// auto gapStart = i;
+				auto gapEnd = childIndex < n.children.length ? n.children[childIndex].start : n.end;
+				while (true)
+				{
+					if (i < gapEnd)
+					{
+						indent[i] = currentIndent + n.indent;
+
+						complexity += typicalLength(i);
+					}
+
+					// A newline belongs to the inner-most node which fully contains it
+					if (i > n.start && i < n.end)
+						if (whiteSpace[i] >= WhiteSpace.newLine)
+							complexity = maxLineComplexity;  // Forced by e.g. sub-query
+
+					if (i < gapEnd)
+						i++;
+					else
+						break;
+				}
+
+				// Process the child
+				if (childIndex < n.children.length)
+				{
+					currentIndent += n.indent;
+					scope(success) currentIndent -= n.indent;
+
+					complexity += scan(n.children[childIndex]);
+				}
 			}
+
+			// Apply per-token indents at this level
+			foreach (tokenIndex, tokenIndent; n.tokenIndent)
+				indent[tokenIndex] += tokenIndent - n.indent;
+
+			if (complexity >= maxLineComplexity)
+			{
+				// Do a second pass, converting soft line breaks to hard
+				foreach (i, _; n.softLineBreak)
+					whiteSpace[i].maximize(WhiteSpace.newLine);
+			}
+
+			return complexity;
+		}
+		scan(&root);
+
+		assert(currentIndent == 0);
+		assert(i == tokens.length);
 	}
 
 	// Style tweak: remove space on the inside of ( and )
@@ -496,18 +648,6 @@ Token[] format(const scope Token[] tokens)
 			whiteSpace[i + 1] = WhiteSpace.none;
 		if (tokens[i].among(Token(TokenOperator(")")), Token(TokenOperator("]"))) && whiteSpace[i] == WhiteSpace.space)
 			whiteSpace[i] = WhiteSpace.none;
-	}
-
-	// Convert nesting level into per-token indent level.
-	auto indent = new int[tokens.length];
-	{
-		void scan(Node* node)
-		{
-			indent[node.start .. node.end] += node.indent;
-			foreach (child; node.children)
-				scan(child);
-		}
-		scan(&root);
 	}
 
 	// Comments generally describe the thing below them,
@@ -522,22 +662,19 @@ Token[] format(const scope Token[] tokens)
 	Token[] result;
 	foreach (i; 0 .. tokens.length)
 	{
-		if (i && whiteSpace[i])
+		final switch (whiteSpace[i])
 		{
-			final switch (whiteSpace[i])
-			{
-				case WhiteSpace.none:
-					break;
-				case WhiteSpace.space:
-					result ~= Token(TokenWhiteSpace(" "));
-					break;
-				case WhiteSpace.blankLine:
-					result ~= Token(TokenWhiteSpace("\n"));
-					goto case;
-				case WhiteSpace.newLine:
-					result ~= Token(TokenWhiteSpace("\n" ~ indentation.replicate(indent[i].max(0))));
-					break;
-			}
+			case WhiteSpace.none:
+				break;
+			case WhiteSpace.space:
+				result ~= Token(TokenWhiteSpace(" "));
+				break;
+			case WhiteSpace.blankLine:
+				result ~= Token(TokenWhiteSpace("\n"));
+				goto case;
+			case WhiteSpace.newLine:
+				result ~= Token(TokenWhiteSpace((i ? "\n" : "") ~ indentation.replicate(indent[i].max(0))));
+				break;
 		}
 		result ~= tokens[i];
 	}

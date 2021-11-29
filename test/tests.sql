@@ -368,6 +368,10 @@ SELECT
   x OVER (PARTITION BY a, b, c),
   y OVER (
     PARTITION BY
+      a, b, c, d, e, f, g, h
+  ),
+  z OVER (
+    PARTITION BY
       a,
       b,
       c,
