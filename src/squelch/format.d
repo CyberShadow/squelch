@@ -19,8 +19,8 @@ import squelch.common;
 // Break lines in expressions with more than this many typical characters.
 enum maxLineComplexity = 65;
 
-// String to prepend to lines, once per indentation level.
-enum indentation = "  ";
+// Indentation depth (number of spaces) to use for most constructs.
+enum indentationWidth = 2;
 
 Token[] format(const scope Token[] tokens)
 {
@@ -79,7 +79,7 @@ Token[] format(const scope Token[] tokens)
 		size_t start, end;
 
 		/// Default indentation level.
-		byte indent = 1;
+		byte indent = indentationWidth;
 
 		/// Don't indent unless this node contains line breaks
 		bool conditionalIndent;
@@ -332,7 +332,7 @@ Token[] format(const scope Token[] tokens)
 							wsPre = wsPost = WhiteSpace.newLine;
 							auto n = stackEnter(Level.union_, t.text);
 							n.indent = 0;
-							n.tokenIndent[tokenIndex] = -1;
+							n.tokenIndent[tokenIndex] = -indentationWidth;
 							break;
 						case "WITH":
 							wsPre = wsPost = WhiteSpace.newLine;
@@ -361,7 +361,7 @@ Token[] format(const scope Token[] tokens)
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
 							auto n = stackEnter(Level.then, t.text);
-							n.tokenIndent[tokenIndex] = 1;
+							n.tokenIndent[tokenIndex] = indentationWidth;
 							break;
 						case "END":
 							wsPre = WhiteSpace.newLine;
@@ -765,11 +765,11 @@ Token[] format(const scope Token[] tokens)
 					result ~= Token(TokenWhiteSpace("\n"));
 					goto case;
 				case WhiteSpace.newLine:
-					result ~= Token(TokenWhiteSpace("\n" ~ indentation.replicate(indent[i].max(0))));
+					result ~= Token(TokenWhiteSpace("\n" ~ " ".replicate(indent[i].max(0))));
 					break;
 			}
 		else
-			result ~= Token(TokenWhiteSpace(indentation.replicate(indent[i].max(0)))); // Pedantic - should always be 0
+			result ~= Token(TokenWhiteSpace(" ".replicate(indent[i].max(0)))); // Pedantic - should always be 0
 		result ~= tokens[i];
 	}
 
