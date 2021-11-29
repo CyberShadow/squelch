@@ -482,3 +482,14 @@ SELECT
     x
   {%- endif -%}
 {%- endmacro %}
+
+SELECT
+  1
+  {% if x %}
+    WHERE
+      NOT ({{ x }})
+    {%- else %}
+    WHERE
+      NOT ({{ x }})
+  {%- endif %}
+;

@@ -536,15 +536,17 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "endfor":
 						case "endif":
-						case "endmacro":
-						case "endfilter":
-						case "endset":
 							auto n = stackExit(Level.dbt, "%" ~ t.kind[3 .. $]);
 							enforce(n.type.endsWith("%" ~ t.kind[3 .. $]),
 								"Found " ~ t.kind ~ " but expected end" ~ n.type[1..$]
 							);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
+						case "endmacro":
+						case "endfilter":
+						case "endset":
+							wsPost = WhiteSpace.blankLine;
+							goto case "endfor";
 						default:
 							break;
 					}
