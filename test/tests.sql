@@ -102,7 +102,8 @@ FROM
 SELECT
   *
 FROM
-  UNNEST(ARRAY<int64>[1, 2, 3]) AS number
+     UNNEST(ARRAY<int64>[1, 2, 3])
+  AS number
 EXCEPT DISTINCT
 SELECT
   1;
@@ -247,7 +248,10 @@ SELECT
   item,
   purchases,
   category,
-  LAST_VALUE(item) OVER (item_window) AS most_popular
+
+     LAST_VALUE(item) OVER (item_window)
+  AS most_popular
+
 FROM
   Produce
 WINDOW
@@ -347,7 +351,8 @@ SELECT
     ARRAY_LENGTH(f_f)
   )
 FROM
-  UNNEST(f_f) AS flag WITH OFFSET AS i;
+     UNNEST(f_f)
+  AS flag WITH OFFSET AS i;
 
 SELECT
   {% for x in y %}
@@ -361,7 +366,10 @@ WITH
   a_a AS (
     SELECT DISTINCT
       b_b,
-      MAX(c_c_c) AS c_c_c,
+
+         MAX(c_c_c)
+      AS c_c_c,
+
     FROM
       {{ ref('d_d_d_d') }}
     WHERE

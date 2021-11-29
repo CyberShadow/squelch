@@ -280,7 +280,9 @@ Token[] format(const scope Token[] tokens)
 								)
 							)
 							{
-								stackInsertBinary(Level.as, t.kind);
+								auto n = stackInsertBinary(Level.as, t.kind);
+								if (n.start + 1 < tokenIndex) // non-trivial
+									wsPre = WhiteSpace.newLine;
 							}
 							break;
 						case "NOT":
