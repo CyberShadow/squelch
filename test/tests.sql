@@ -529,3 +529,7 @@ WHERE
   OR
          x_x_x_x_x_x_x_x_x_x
      AND x_x_x_x_x_x_x_x_x_x;
+
+SELECT
+      (1 + 1)
+  AND x_x_x_x_x = 1;

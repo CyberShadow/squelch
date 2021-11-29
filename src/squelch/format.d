@@ -191,25 +191,41 @@ Token[] format(const scope Token[] tokens)
 				else
 				{
 					auto p = stack[$-1];
-					Node*[] children;
+					auto start = tokenIndex;
+					auto childrenStart = p.children.length;
+
+					// Extend the start backwards to adopt non-syntax tokens
+					// and adopt higher-priority nodes
+					while (start > p.start)
+					{
+						if (childrenStart && p.children[childrenStart - 1].end == start)
+						{
+							// Decide if we want to adopt this child
+							if (p.children[childrenStart - 1].level < level)
+							{
+								childrenStart--;
+								start = p.children[childrenStart].start;
+							}
+							else
+								break;
+						}
+						else
+						{
+							// Extend the start backwards to adopt non-syntax tokens
+							if ((start - 1) !in p.tokenIndent && (start) !in p.softLineBreak)
+								start--;
+							else
+								break;
+						}
+					}
 
 					// Move the previous hierarchy into the new inserted level
-					{
-						auto i = p.children.length;
-						while (i && p.children[i-1].level < level)
-							i--;
-						children = p.children[i .. $];
-						p.children = p.children[0 .. i];
-					}
+					Node*[] children = p.children[childrenStart .. $];
+					p.children = p.children[0 .. childrenStart];
 
 					auto n = stackPush_(level, type);
 					n.children = children;
-					n.start = children.length ? children[0].start : tokenIndex;
-
-					// Extend the start backwards to adopt non-syntax tokens
-					auto limit = p.children.length > 1 ? p.children[$-2].end : p.start;
-					while (n.start > limit && (n.start - 1) !in p.tokenIndent && (n.start) !in p.softLineBreak)
-						n.start--;
+					n.start = start;
 				}
 				return stack[$-1];
 			}
