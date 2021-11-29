@@ -345,10 +345,10 @@ Token[] format(const scope Token[] tokens)
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "THEN":
-							wsPre = wsPost = WhiteSpace.space;
+							wsPre = WhiteSpace.newLine;
+							wsPost = WhiteSpace.space;
 							auto n = stackEnter(Level.then, t.text);
-							n.tokenIndent[tokenIndex] = 0;
-							n.softLineBreak[tokenIndex] = true;
+							n.tokenIndent[tokenIndex] = 1;
 							break;
 						case "END":
 							wsPre = WhiteSpace.newLine;

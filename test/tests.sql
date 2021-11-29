@@ -124,8 +124,10 @@ SELECT
 
 SELECT
   CASE
-    WHEN a THEN 10
-    WHEN b THEN 20
+    WHEN a
+      THEN 10
+    WHEN b
+      THEN 20
     ELSE 30
   END;
 
@@ -406,8 +408,10 @@ FROM
 SELECT
   COUNT(x),
   CASE
-    WHEN x = 1 THEN 1
-    WHEN x = 2 THEN 2
+    WHEN x = 1
+      THEN 1
+    WHEN x = 2
+      THEN 2
     ELSE 0
   END;
 
@@ -442,7 +446,8 @@ SELECT
       '4',
       '5',
       '6'
-    ) THEN y
+    )
+      THEN y
     ELSE y
   END AS x_x_x_x;
 
@@ -454,9 +459,11 @@ SELECT
         x_x AS x,
         x_x_x - x_x AS x
       )
-    WHEN x_x AND x_x_x <= x_x THEN STRUCT(0.0 AS x, x_x_x AS x)
+    WHEN x_x AND x_x_x <= x_x
+      THEN STRUCT(0.0 AS x, x_x_x AS x)
     -- x
-    WHEN x_x > '' AND x_x_x_x_x > 0 THEN STRUCT(x_x_x AS x, 0.0 AS x)
+    WHEN x_x > '' AND x_x_x_x_x > 0
+      THEN STRUCT(x_x_x AS x, 0.0 AS x)
     -- x
     ELSE STRUCT(0.0 AS x, 0.0 AS x)
   END AS x_x_x;
