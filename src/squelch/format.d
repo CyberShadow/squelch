@@ -574,6 +574,29 @@ Token[] format(const scope Token[] tokens)
 		}
 	}
 
+	// Comments generally describe the thing below them,
+	// so should be aligned accordingly
+	{
+		void adjust(Node* n)
+		{
+			alias isComment = n => n.match!(
+				(ref const TokenComment t) => true,
+				(ref const _) => false
+			);
+			while (n.start && isComment(tokens[n.start - 1]))
+			{
+				n.start--;
+				if (n.start + 1 in n.tokenIndent)
+					n.tokenIndent[n.start] = n.tokenIndent[n.start + 1];
+			}
+			while (n.end > n.start && isComment(tokens[n.end - 1]))
+				n.end--;
+			foreach (child; n.children)
+				adjust(child);
+		}
+		adjust(&root);
+	}
+
 	size_t typicalLength(size_t tokenIndex)
 	{
 		return tokens[tokenIndex].match!(
@@ -677,14 +700,6 @@ Token[] format(const scope Token[] tokens)
 		if (tokens[i].among(Token(TokenOperator(")")), Token(TokenOperator("]"))) && whiteSpace[i] == WhiteSpace.space)
 			whiteSpace[i] = WhiteSpace.none;
 	}
-
-	// Comments generally describe the thing below them,
-	// so should be aligned accordingly
-	foreach_reverse (i; 1 .. tokens.length)
-		tokens[i - 1].match!(
-			(ref const TokenComment t) { indent[i - 1] = indent[i]; },
-			(ref const _) {}
-		);
 
 	// Final pass: materialize WhiteSpace into TokenWhiteSpace
 	Token[] result;
