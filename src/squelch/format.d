@@ -526,12 +526,13 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "elif":
 						case "else":
-							auto i = stack.countUntil!(n => n.level == Level.dbt);
+							auto i = stack.retro.countUntil!(n => n.level == Level.dbt);
 							enforce(i >= 0, "Mismatched " ~ t.kind);
-							enforce(stack[i].type == "%if" || stack[i].type == "%for",
-								"Found " ~ t.kind ~ " but expected end" ~ stack[i].type[1..$]
+							auto n = stack[$ - 1 - i];
+							enforce(n.type == "%if" || n.type == "%for",
+								"Found " ~ t.kind ~ " but expected end" ~ n.type[1..$]
 							);
-							stack[i].tokenIndent[tokenIndex] = 0;
+							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "endfor":
 						case "endif":

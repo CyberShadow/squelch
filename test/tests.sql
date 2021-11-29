@@ -474,3 +474,11 @@ SELECT
     AND x
   {% endif %}
   AND 1;
+
+{% macro x() -%}
+  {%- if x -%}
+    x
+  {%- else -%}
+    x
+  {%- endif -%}
+{%- endmacro %}
