@@ -268,8 +268,6 @@ Token[] format(const scope Token[] tokens)
 								break;
 							}
 							stackInsertBinary(Level.and, t.kind);
-							if (stack[$-2].level == Level.select || stack[$-2].level == Level.on)
-								wsPre = WhiteSpace.newLine;
 							return;
 						case "OR":
 							stackInsertBinary(Level.or, t.kind);
@@ -640,6 +638,19 @@ Token[] format(const scope Token[] tokens)
 				adjust(child);
 		}
 		adjust(&root);
+	}
+
+	// AND should always have line breaks when nested directly in a WHERE.
+	{
+		void adjust(Node* n, Node* parent)
+		{
+			if (n.level == Level.and && (parent.level == Level.select || parent.level == Level.on))
+				foreach (tokenIndex, _; n.tokenIndent)
+					whiteSpace[tokenIndex].maximize(WhiteSpace.newLine);
+			foreach (child; n.children)
+				adjust(child, n);
+		}
+		adjust(&root, null);
 	}
 
 	size_t typicalLength(size_t tokenIndex)

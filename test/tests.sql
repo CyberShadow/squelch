@@ -511,3 +511,21 @@ CASE
     THEN 1
   ELSE 0
 END AS x_x_x_x_x;
+
+SELECT
+  *
+FROM
+  x
+WHERE
+  x AND x OR x AND x;
+
+SELECT
+  *
+FROM
+  x
+WHERE
+         x_x_x_x_x_x_x_x_x_x
+     AND x_x_x_x_x_x_x_x_x_x
+  OR
+         x_x_x_x_x_x_x_x_x_x
+     AND x_x_x_x_x_x_x_x_x_x;
