@@ -46,6 +46,8 @@ Token[] format(const scope Token[] tokens)
 		when,
 		case_,
 
+		as,
+
 		// Technically not a binary operator, but acts like a low-priority one
 		comma,
 
@@ -258,6 +260,15 @@ Token[] format(const scope Token[] tokens)
 					switch (t.kind)
 					{
 						case "AS":
+							wsPre = wsPost = WhiteSpace.space;
+							if (tokenIndex + 1 < tokens.length && tokens[tokenIndex + 1].match!(
+									(ref const TokenIdentifier t) => true,
+									(ref const _) => false
+								))
+							{
+								stackInsertBinary(Level.as, t.kind);
+							}
+							break;
 						case "NOT":
 						case "IS":
 						case "OVER":
@@ -272,7 +283,7 @@ Token[] format(const scope Token[] tokens)
 							auto n = stackInsertBinary(Level.comparison, t.kind);
 							n.softLineBreak.remove(tokenIndex);
 							n.softLineBreak.remove(n.start);
-							goto case "AS";
+							break;
 						case "AND":
 							wsPre = wsPost = WhiteSpace.space;
 							stackPopTo(Level.comparison);
