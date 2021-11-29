@@ -272,7 +272,13 @@ Token[] format(const scope Token[] tokens)
 								&& stack.retro
 								.find!(n => n.level >= Level.select)
 								.front
-								.level == Level.select)
+								.level == Level.select
+								&& tokenIndex > 0
+								&& !tokens[tokenIndex - 1].match!(
+									(ref const TokenKeyword t) => t.kind == "WITH OFFSET",
+									(ref const _) => false
+								)
+							)
 							{
 								stackInsertBinary(Level.as, t.kind);
 							}
