@@ -413,6 +413,7 @@ tokenLoop:
 			{
 				auto kwd = tokens[tokenIndex].match!(
 					(ref const TokenKeyword t) => t.text,
+					(ref const TokenIdentifier t) => t.text.tryToString,
 					(ref const _) => null,
 				);
 
@@ -451,6 +452,7 @@ tokenLoop:
 				if (join[tokenIndex])
 					token.match!(
 						(ref const TokenKeyword t) { k.text ~= " " ~ t.text; },
+						(ref const TokenIdentifier t) { k.text ~= " " ~ t.text.tryToString; },
 						(ref const _) { assert(false); },
 					);
 				else
