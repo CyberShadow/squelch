@@ -423,3 +423,16 @@ WINDOW
       x_x ASC
     ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING
   );
+
+SELECT
+  CASE
+    WHEN x_x_x IN (
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6'
+    ) THEN y
+    ELSE y
+  END AS x_x_x_x;
