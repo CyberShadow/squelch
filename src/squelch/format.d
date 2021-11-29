@@ -526,9 +526,8 @@ Token[] format(const scope Token[] tokens)
 							break;
 						case "elif":
 						case "else":
-							auto i = stack.retro.countUntil!(n => n.level == Level.dbt);
-							enforce(i >= 0, "Mismatched " ~ t.kind);
-							auto n = stack[$ - 1 - i];
+							stackPopTo(Level.dbt);
+							auto n = stack[$ - 1];
 							enforce(n.type == "%if" || n.type == "%for",
 								"Found " ~ t.kind ~ " but expected end" ~ n.type[1..$]
 							);

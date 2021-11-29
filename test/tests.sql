@@ -488,7 +488,7 @@ SELECT
   {% if x %}
     WHERE
       NOT ({{ x }})
-    {%- else %}
+  {%- else %}
     WHERE
       NOT ({{ x }})
   {%- endif %}
