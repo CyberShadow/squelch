@@ -569,3 +569,6 @@ SELECT
         AND x(x_x, 'x') > 0
       THEN x_x('x', x_x)
   END;
+
+SELECT
+  ARRAY_AGG(x IGNORE NULLS ORDER BY x ASC)[OFFSET(0)];

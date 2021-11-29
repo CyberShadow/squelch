@@ -310,7 +310,7 @@ Token[] format(const scope Token[] tokens)
 								.find!(n => n.level >= Level.parensInner)
 								.front
 								.type
-								.among("OVER(", "AS("))
+								.among("OVER(", "AS(", "`ARRAY_AGG`("))
 							{
 								wsPre = wsPost = WhiteSpace.space;
 								auto n = stackEnter(Level.select, "BY-inline", true);
