@@ -682,12 +682,32 @@ Token[] format(const scope Token[] tokens)
 			(ref const TokenWhiteSpace t) => 0,
 			(ref const TokenComment t) => 60,
 			(ref const TokenKeyword t) => t.text.split(" ").length * (5 + 1),
-			(ref const TokenIdentifier t) => t.text.count!(
-				e => e.match!(
-					(dchar c) => c == '_',
-					(ref _) => false,
-				)
-			) * (5 + 1) + 5,
+			(ref const TokenIdentifier t)
+			{
+				import std.ascii : isAlphaNum;
+
+				bool wasLetter;
+				size_t length;
+
+				void handle(dchar c)
+				{
+					bool isLetter = c >= 0x80 || isAlphaNum(cast(char)c);
+					if (!isLetter)
+						length++;
+					else
+						if (!wasLetter)
+							length += 5;
+					wasLetter = isLetter;
+				}
+
+				foreach (e; t.text)
+					e.match!(
+						(dchar c) { handle(c); },
+						(ref const DbtExpression e) { foreach (c; e.expr) handle(c); },
+					);
+
+				return length;
+			},
 			(ref const TokenNamedParameter t) => 10,
 			(ref const TokenOperator t) => 1 + 1,
 			(ref const TokenAngleBracket t) => 1 + 1,

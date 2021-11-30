@@ -571,3 +571,10 @@ SELECT
 
 SELECT
   ARRAY_AGG(x IGNORE NULLS ORDER BY x ASC)[OFFSET(0)];
+
+SELECT
+    {{ ref('x_x_x_x_x') }}
+  + {{ ref('x_x_x_x_x') }}
+  + {{ ref('x_x_x_x_x') }}
+  + {{ ref('x_x_x_x_x') }}
+  + {{ ref('x_x_x_x_x') }};
