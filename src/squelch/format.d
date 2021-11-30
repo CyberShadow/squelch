@@ -17,7 +17,7 @@ import ae.utils.math : maximize, minimize;
 import squelch.common;
 
 // Break lines in expressions with more than this many typical characters.
-enum maxLineComplexity = 65;
+enum maxLineComplexity = 80;
 
 // Indentation depth (number of spaces) to use for most constructs.
 enum indentationWidth = 2;

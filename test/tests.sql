@@ -161,12 +161,8 @@ SELECT
   fun(a_b_c_d_e_f_g_h),
   fun(a_b_c_d_e_f_g_h_i),
   fun(a_b_c_d_e_f_g_h_i_j),
-  fun(
-    a_b_c_d_e_f_g_h_i_j_k
-  ),
-  fun(
-    a_b_c_d_e_f_g_h_i_j_k_l
-  ),
+  fun(a_b_c_d_e_f_g_h_i_j_k),
+  fun(a_b_c_d_e_f_g_h_i_j_k_l),
   fun(
     a_b_c_d_e_f_g_h_i_j_k_l_m
   ),
@@ -178,18 +174,25 @@ SELECT
   ),
   fun(
     a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p
+  ),
+  fun(
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p_q
+  ),
+  fun(
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p_q_r
+  ),
+  fun(
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p_q_r_s
+  ),
+  fun(
+    a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p_q_r_s_t
   );
 
 SELECT
   fun(a_a_a),
   fun(a_a_a, b_b_b),
   fun(a_a_a, b_b_b, c_c_c),
-  fun(
-    a_a_a,
-    b_b_b,
-    c_c_c,
-    d_d_d
-  ),
+  fun(a_a_a, b_b_b, c_c_c, d_d_d),
   fun(
     a_a_a,
     b_b_b,
@@ -216,7 +219,7 @@ SELECT
   );
 
 SELECT
-    x
+    x_x
   * (1 - x)
   * ((x * x) / (1 + x) - x - x);
 
@@ -324,8 +327,8 @@ WINDOW
   y AS (PARTITION BY b ORDER BY c DESC);
 
 SELECT
-    x
-  / AVG(x) OVER (PARTITION BY x, y) AS z
+    x_x
+  / AVG(x_x) OVER (PARTITION BY x_x, y_y_y) AS z_z_z
 FROM
   foo;
 
@@ -336,7 +339,7 @@ SELECT
 
 SELECT
   IFNULL(
-    MIN(IF(f = 0, i, NULL)),
+    MIN(IF(f_f_f_f_f_f_f = 0, i, NULL)),
     ARRAY_LENGTH(f_f)
   )
 FROM
@@ -368,15 +371,7 @@ SELECT
 SELECT
   x OVER (PARTITION BY a, b, c),
   y OVER (
-    PARTITION BY
-      a,
-      b,
-      c,
-      d,
-      e,
-      f,
-      g,
-      h
+    PARTITION BY a, b, c, d, e, f, g, h, i_i
   ),
   z OVER (
     PARTITION BY
@@ -389,7 +384,8 @@ SELECT
       g,
       h,
       i,
-      j
+      j,
+      k
   );
 
 SELECT
@@ -409,6 +405,8 @@ SELECT
   CASE
     WHEN x = 1 THEN 1
     WHEN x = 2 THEN 2
+    WHEN x = 3 THEN 3
+    WHEN x = 4 THEN 4
     ELSE 0
   END;
 
@@ -444,7 +442,10 @@ SELECT
           '3',
           '4',
           '5',
-          '6'
+          '6',
+          '7',
+          '8',
+          '9'
         )
       THEN y
     ELSE y
@@ -456,7 +457,7 @@ SELECT
     WHEN x_x AND x_x_x > x_x
       THEN STRUCT(
           x_x AS x,
-          x_x_x - x_x AS x
+          x_x_x_x_x - x_x AS x
         )
     WHEN x_x AND x_x_x <= x_x
       THEN STRUCT(0.0 AS x, x_x_x AS x)
@@ -531,13 +532,13 @@ SELECT
 
 SELECT
   *,
-    x_x_x_x_x
-  * x_x_x_x_x AS a,
+    x_x_x_x_x_x_x_x_x_x
+  * x_x_x_x_x_x_x_x_x_x AS a,
   2 AS b;
 
 SELECT
   CAST(
-    x_x_x_x_x_x_x_x_x_x AS STRING
+    x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x AS STRING
   );
 
 SELECT
@@ -552,13 +553,13 @@ SELECT
 SELECT
   CASE
     WHEN
-            x(x_x) = 0
-        AND x(x_x, 'x') > 0
-      THEN x_x('x', x_x)
+            x(x_x_x_x_x) = 0
+        AND x(x_x_x_x_x, 'x') > 0
+      THEN x_x_x_x_x('x', x_x_x_x_x)
     WHEN
-            x(x_x) = 0
-        AND x(x_x, 'x') > 0
-      THEN x_x('x', x_x)
+            x(x_x_x_x_x) = 0
+        AND x(x_x_x_x_x, 'x') > 0
+      THEN x_x_x_x_x('x', x_x_x_x_x)
   END;
 
 SELECT
@@ -578,7 +579,7 @@ SELECT
       THEN 1
     WHEN
           x
-        = x_x_x_x_x_x_x_x_x_x
+        = x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x_x
       THEN 2
     ELSE 0
   END;
