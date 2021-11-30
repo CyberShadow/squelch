@@ -543,9 +543,9 @@ SELECT
 SELECT
   -- x
          x_x > 'x'
-         -- x
+     -- x
      AND x_x_x_x_x > 0
-         -- x
+     -- x
      AND x_x IS NULL
   OR x_x IN UNNEST(x_x_x);
 

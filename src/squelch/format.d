@@ -12,7 +12,7 @@ import std.sumtype : match;
 static import std.string;
 
 import ae.utils.array : elementIndex;
-import ae.utils.math : maximize;
+import ae.utils.math : maximize, minimize;
 
 import squelch.common;
 
@@ -885,6 +885,13 @@ Token[] format(const scope Token[] tokens)
 		if (tokens[i].among(Token(TokenOperator(")")), Token(TokenOperator("]"))) && whiteSpace[i] == WhiteSpace.space)
 			whiteSpace[i] = WhiteSpace.none;
 	}
+
+	// Make another pass to avoid excessively deep comment indentation
+	foreach_reverse (i; 0 .. tokens.length)
+		tokens[i].match!(
+			(ref const TokenComment t) { indent[i].minimize(indent[i + 1]); },
+			(ref const _) {}
+		);
 
 	// Final pass: materialize WhiteSpace into TokenWhiteSpace
 	Token[] result;
