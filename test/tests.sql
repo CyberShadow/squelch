@@ -327,15 +327,17 @@ WINDOW
   y AS (PARTITION BY b ORDER BY c DESC);
 
 SELECT
-    x_x
-  / AVG(x_x) OVER (PARTITION BY x_x, y_y_y) AS z_z_z
+       x_x
+     / AVG(x_x) OVER (PARTITION BY x_x, y_y_y)
+  AS z_z_z
 FROM
   foo;
 
 SELECT
-    XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123)
-  / 123
-  * 123 AS xxxxx_yyyyy_xxxxx;
+       XXXXX_YYYYY_XXXXX((xxxxx_yyyyy_xxxxx / xxxxx_yyyyy_xxxxx - 123) * 123, 123)
+     / 123
+     * 123
+  AS xxxxx_yyyyy_xxxxx;
 
 SELECT
   IFNULL(
@@ -433,40 +435,42 @@ WINDOW
   );
 
 SELECT
-  CASE
-    WHEN
-           x_x_x
-        IN (
-          '1',
-          '2',
-          '3',
-          '4',
-          '5',
-          '6',
-          '7',
-          '8',
-          '9'
-        )
-      THEN y
-    ELSE y
-  END AS x_x_x_x;
+     CASE
+       WHEN
+              x_x_x
+           IN (
+             '1',
+             '2',
+             '3',
+             '4',
+             '5',
+             '6',
+             '7',
+             '8',
+             '9'
+           )
+         THEN y
+       ELSE y
+     END
+  AS x_x_x_x;
 
 SELECT
-  CASE
-    -- x
-    WHEN x_x AND x_x_x > x_x
-      THEN STRUCT(
-          x_x AS x,
-          x_x_x_x_x - x_x AS x
-        )
-    WHEN x_x AND x_x_x <= x_x
-      THEN STRUCT(0.0 AS x, x_x_x AS x)
-    -- x
-    WHEN x_x > '' AND x_x_x_x_x > 0
-      THEN STRUCT(x_x_x AS x, 0.0 AS x)
-    -- x
-    ELSE STRUCT(0.0 AS x, 0.0 AS x)
-  END AS x_x_x;
+     CASE
+       -- x
+       WHEN x_x AND x_x_x > x_x
+         THEN STRUCT(
+             x_x AS x,
+             x_x_x_x_x - x_x AS x
+           )
+       WHEN x_x AND x_x_x <= x_x
+         THEN STRUCT(0.0 AS x, x_x_x AS x)
+       -- x
+       WHEN x_x > '' AND x_x_x_x_x > 0
+         THEN STRUCT(x_x_x AS x, 0.0 AS x)
+       -- x
+       ELSE STRUCT(0.0 AS x, 0.0 AS x)
+     END
+  AS x_x_x;
 
 SELECT
   x
@@ -500,13 +504,14 @@ FROM
   x;
 
 SELECT
-  CASE
-    WHEN
-          MIN(x_x_x_x_x) OVER (PARTITION BY x_x_x)
-        = x_x_x_x_x
-      THEN 1
-    ELSE 0
-  END AS x_x_x_x_x;
+     CASE
+       WHEN
+             MIN(x_x_x_x_x) OVER (PARTITION BY x_x_x)
+           = x_x_x_x_x
+         THEN 1
+       ELSE 0
+     END
+  AS x_x_x_x_x;
 
 SELECT
   *
@@ -532,8 +537,9 @@ SELECT
 
 SELECT
   *,
-    x_x_x_x_x_x_x_x_x_x
-  * x_x_x_x_x_x_x_x_x_x AS a,
+       x_x_x_x_x_x_x_x_x_x
+     * x_x_x_x_x_x_x_x_x_x
+  AS a,
   2 AS b;
 
 SELECT
