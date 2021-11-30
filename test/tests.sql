@@ -123,13 +123,7 @@ SELECT
   1;
 
 SELECT
-  CASE
-    WHEN a
-      THEN 10
-    WHEN b
-      THEN 20
-    ELSE 30
-  END;
+  CASE WHEN a THEN 10 WHEN b THEN 20 ELSE 30 END;
 
 SELECT
   CURRENT_DATE();
@@ -413,10 +407,8 @@ FROM
 SELECT
   COUNT(x),
   CASE
-    WHEN x = 1
-      THEN 1
-    WHEN x = 2
-      THEN 2
+    WHEN x = 1 THEN 1
+    WHEN x = 2 THEN 2
     ELSE 0
   END;
 
@@ -578,3 +570,15 @@ SELECT
   + {{ ref('x_x_x_x_x') }}
   + {{ ref('x_x_x_x_x') }}
   + {{ ref('x_x_x_x_x') }};
+
+SELECT
+  COUNT(x),
+  CASE
+    WHEN x = 1
+      THEN 1
+    WHEN
+          x
+        = x_x_x_x_x_x_x_x_x_x
+      THEN 2
+    ELSE 0
+  END;

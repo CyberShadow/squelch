@@ -1,7 +1,7 @@
 module squelch.format;
 
 import std.algorithm.comparison : among, max;
-import std.algorithm.iteration : map;
+import std.algorithm.iteration : map, filter, each;
 import std.algorithm.searching;
 import std.array : replicate, split;
 import std.exception;
@@ -87,6 +87,9 @@ Token[] format(const scope Token[] tokens)
 		/// If true, and the parent has its soft line breaks applied, do so here too
 		bool breakWithParent;
 
+		/// If true, and any sibling has its soft line breaks applied, do so here too
+		bool breakWithSibling;
+
 		/// Indentation level overrides for specific tokens
 		/// (mainly for tokens are part of this node's syntax,
 		/// and should not be indented).
@@ -95,8 +98,11 @@ Token[] format(const scope Token[] tokens)
 		/// If set, overrides the parent's .indent for this node.
 		int parentIndentOverride = int.min;
 
-		// If true, the corresponding whiteSpace may be changed to newLine
+		/// If true, the corresponding whiteSpace may be changed to newLine
 		bool[size_t] softLineBreak;
+
+		/// State flag for newline application.
+		bool breaksApplied;
 	}
 	Node root = {
 		level : Level.file,
@@ -146,10 +152,11 @@ Token[] format(const scope Token[] tokens)
 				return n;
 			}
 
-			void stackPopTo(Level level)
+			Node* stackPopTo(Level level)
 			{
 				while (stack[$-1].level < level)
 					stackPop_(false);
+				return stack[$-1].level == level ? stack[$-1] : null;
 			}
 
 			Node* stackEnter(Level level, string type, bool glueBackwards = false)
@@ -369,28 +376,34 @@ Token[] format(const scope Token[] tokens)
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "CASE":
-							wsPre = wsPost = WhiteSpace.newLine;
+							wsPre = wsPost = WhiteSpace.space;
 							auto n = stackEnter(Level.case_, t.text);
+							n.softLineBreak[tokenIndex] = n.softLineBreak[tokenIndex + 1] = true;
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						case "WHEN":
 						case "ELSE":
-							wsPre = WhiteSpace.newLine;
-							wsPost = WhiteSpace.space;
+							wsPre = wsPost = WhiteSpace.space;
+							auto p = stackPopTo(Level.case_);
+							if (p)
+								p.softLineBreak[tokenIndex] = true;
 							auto n = stackEnter(Level.when, t.text);
+							n.softLineBreak[tokenIndex] = true;
 							n.indent = 2 * indentationWidth;
 							n.tokenIndent[tokenIndex] = 0;
+							n.breakWithSibling = true;
 							break;
 						case "THEN":
-							wsPre = WhiteSpace.newLine;
-							wsPost = WhiteSpace.space;
-							auto n = stackEnter(Level.when, t.text);
+							wsPre = wsPost = WhiteSpace.space;
+							auto n = stackEnter(Level.when, t.text, true);
 							n.indent = 2 * indentationWidth;
+							n.softLineBreak[tokenIndex] = true;
 							n.tokenIndent[tokenIndex] = indentationWidth;
 							break;
 						case "END":
-							wsPre = WhiteSpace.newLine;
+							wsPre = WhiteSpace.space;
 							auto n = stackExit(Level.case_, "CASE ... END");
+							n.softLineBreak[tokenIndex] = true;
 							n.tokenIndent[tokenIndex] = 0;
 							break;
 						default:
@@ -753,19 +766,29 @@ Token[] format(const scope Token[] tokens)
 					complexity += scan(n.children[childIndex]);
 			}
 
+			void breakNode(Node* n)
+			{
+				if (n.breaksApplied)
+					return;
+				n.breaksApplied = true;
+
+				foreach (i, _; n.softLineBreak)
+					whiteSpace[i].maximize(WhiteSpace.newLine);
+
+				foreach (child; n.children)
+					if (child.breakWithParent)
+						breakNode(child);
+			}
+
 			if (complexity >= maxLineComplexity)
 			{
 				// Do a second pass, converting soft line breaks to hard
-				void breakNode(Node* n)
-				{
-					foreach (i, _; n.softLineBreak)
-						whiteSpace[i].maximize(WhiteSpace.newLine);
-					foreach (child; n.children)
-						if (child.breakWithParent)
-							breakNode(child);
-				}
 				breakNode(n);
 			}
+
+			// Propagate breaks to siblings, if requested
+			if (n.children.any!(c => c.breaksApplied))
+				n.children.filter!(c => c.breakWithSibling).each!breakNode;
 
 			return complexity;
 		}
