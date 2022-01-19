@@ -1,0 +1,16 @@
+name: test
+on: [ push, pull_request ]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install D compiler
+        uses: dlang-community/setup-dlang@1ccbc70a0eff7f264857b53c562aa45fd7f1e479
+        with:
+          compiler: dmd-2.098.0
+
+      - run: dub test squelch:lib
+      - run: dub run -- test/*.sql
+      - run: git diff --exit-code
