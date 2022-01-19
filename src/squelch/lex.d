@@ -143,7 +143,6 @@ bool isIdentifierContinuation(char c) { return isIdentifier(c) || c == '-'; }
 Token[] lex(string s)
 {
 	Token[] tokens;
-	scope(failure) stderr.writeln("Here: ", s[0 .. min(10, $)], (s.length > 10 ? "..." : ""));
 
 tokenLoop:
 	while (s.length)
