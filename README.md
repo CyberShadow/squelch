@@ -5,6 +5,8 @@ Squelch is an SQL formatter.
 
 Currently, it supports only BigQuery Standard SQL + Dbt/Jinja2 macros.
 
+Try it online: https://squelch-sql-formatter.herokuapp.com/
+
 
 Usage
 -----
