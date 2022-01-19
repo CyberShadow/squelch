@@ -3,4 +3,13 @@ description "SQL formatter for BigQuery + Dbt"
 license "BSL-1.0"
 targetType "executable"
 
-dependency "ae" version="==0.0.3102"
+# CLI
+dependency "squelch:lib" version="*"
+sourceFiles "src/squelch/main.d"
+
+# Library
+subPackage {
+	name "lib"
+        dependency "ae" version="==0.0.3102"
+        excludedSourceFiles "src/squelch/main.d"
+}
