@@ -366,6 +366,10 @@ WITH
       a_a = b_b_b
     GROUP BY
       c_c
+    HAVING
+      c_c_c > 0
+    QUALIFY
+      SUM(c_c) OVER () > 0
   )
 SELECT
   1;
