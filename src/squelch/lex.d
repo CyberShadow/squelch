@@ -110,7 +110,7 @@ immutable string[] keywords =
 	"PARTITION",
 	"PRECEDING",
 	"PROTO",
-        "QUALIFY",
+	"QUALIFY",
 	"RANGE",
 	"RECURSIVE",
 	"RESPECT",
