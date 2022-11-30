@@ -519,13 +519,31 @@ bool readDbtExpression(ref string s, ref DbtString text, QuotingContext quoting)
 {
 	if (s.skipOver("{{"))
 	{
-		text ~= DbtStringElem(
-			DbtExpression(
-				s.skipUntil("}}").enforce("Unterminated Dbt expression"),
-				quoting
-			)
-		);
-		return true;
+		// Perform basic lexing of Jinja syntax to find the end of the expression.
+		string orig = s;
+		while (s.length)
+		{
+			if (s.skipOver("}}"))
+			{
+				text ~= DbtStringElem(
+					DbtExpression(
+						orig[0 .. orig.length - s.length - "}}".length],
+						quoting
+					)
+				);
+				return true;
+			}
+			else
+			if (s[0].among('\'', '"'))
+			{
+				auto quote = s[0 .. 1];
+				s = s[1 .. $];
+				s.skipUntil(quote).enforce("Unterminated string in Dbt expression");
+			}
+			else
+				s = s[1 .. $]; // Skip other characters
+		}
+		throw new Exception("Unterminated Dbt expression");
 	}
 	return false;
 }
