@@ -48,6 +48,8 @@ Token[] format(const scope Token[] tokens)
 
 		as,
 
+		namedArgument, // =>
+
 		// Technically not a binary operator, but acts like a low-priority one
 		comma,
 
@@ -578,6 +580,9 @@ Token[] format(const scope Token[] tokens)
 						case "/":
 						case "||":
 							stackInsertBinary(Level.multiplication, t.text);
+							break;
+						case "=>":
+							stackInsertBinary(Level.namedArgument, t.text);
 							break;
 						default:
 							wsPre = wsPost = WhiteSpace.space;

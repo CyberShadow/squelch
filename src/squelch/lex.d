@@ -34,6 +34,7 @@ immutable string[] operators =
 	"||",
 	"~",
 	"<<", ">>",
+	"=>",
 ];
 
 // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
