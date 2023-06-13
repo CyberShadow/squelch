@@ -364,7 +364,7 @@ tokenLoop:
 				continue tokenLoop;
 			}
 
-		throw new Exception("Unrecognized syntax");
+		throw new Exception("Unrecognized syntax: " ~ s[0..min(20, $)]);
 	}
 
 	// Process contextual keywords
