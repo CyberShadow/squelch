@@ -10,6 +10,6 @@ sourceFiles "src/squelch/main.d"
 # Library
 subPackage {
 	name "lib"
-        dependency "ae" version="==0.0.3102"
+        dependency "ae" version="==0.0.3363"
         excludedSourceFiles "src/squelch/main.d"
 }
