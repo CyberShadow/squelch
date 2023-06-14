@@ -17,7 +17,7 @@ then
 
 	cd "$(dirname "$0")"
 
-	d_ver=2.098.0
+	d_ver=2.104.0
 
 	if [[ ! -d ~/dlang/dmd-"$d_ver" ]]
 	then
