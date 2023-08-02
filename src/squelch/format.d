@@ -366,6 +366,7 @@ Token[] format(const scope Token[] tokens)
 							auto n = stackEnter(Level.on, t.kind);
 							n.tokenIndent[tokenIndex] = 0;
 							break;
+						case "RANGE":
 						case "ROWS":
 							wsPre = WhiteSpace.newLine;
 							wsPost = WhiteSpace.space;
