@@ -178,8 +178,8 @@ tokenLoop:
 		// TokenString / quoted TokenIdentifier
 		{
 			size_t i;
-			bool raw, bytes, triple;
-			char quote;
+			bool raw, bytes;
+			string quote;
 
 			while (i < s.length)
 			{
@@ -198,26 +198,27 @@ tokenLoop:
 				if (s[i].among('\'', '"', '`'))
 				{
 					s = s[i .. $];
-					quote = s[0];
-					if (s.length > 3 && s[1] == quote && s[2] == quote)
+					if (s.length > 3 && s[1] == s[0] && s[2] == s[0])
 					{
+						quote = s[0 .. 3];
 						s = s[3 .. $];
-						triple = true;
 					}
 					else
+					{
+						quote = s[0 .. 1];
 						s = s[1 .. $];
+					}
 
 					// Parse string contents
 					DbtString text;
 					while (true)
 					{
 						enforce(s.length, "Unterminated string");
-						if (s[0] == quote && (!triple || (s.length >= 3 && s[1] == quote && s[2] == quote)))
+						if (s.skipOver(quote))
 						{
-							s = s[triple ? 3 : 1 .. $];
-							if (quote == '`')
+							if (quote[0] == '`')
 							{
-								enforce(!raw && !bytes && !triple, "Invalid quoted identifier");
+								enforce(!raw && !bytes && quote.length == 1, "Invalid quoted identifier");
 								tokens ~= Token(TokenIdentifier(text));
 							}
 							else
@@ -225,7 +226,7 @@ tokenLoop:
 							continue tokenLoop;
 						}
 
-						if (s.readDbtExpression(text, QuotingContext(quote, raw, triple)))
+						if (s.readDbtExpression(text, QuotingContext(quote, raw)))
 							continue;
 
 						if (!raw && s.skipOver("\\"))
@@ -313,7 +314,7 @@ tokenLoop:
 			DbtString text;
 			while (s.length)
 			{
-				if (s.readDbtExpression(text, QuotingContext(0)))
+				if (s.readDbtExpression(text, QuotingContext(null)))
 					continue;
 				if (!isIdentifierContinuation(s[0]))
 					break;

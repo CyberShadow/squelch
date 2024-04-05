@@ -69,23 +69,23 @@ string encode(ref const scope DbtString str, bool identifier)
 {
 	// Try all encodings, and pick the shortest one.
 	string bestEnc;
-	foreach (quote; identifier ? ['\0', '`'] : ['\'', '"'])
-		foreach (raw; quote ? [false, true] : [false])
+	foreach (quoteChar; identifier ? ['\0', '`'] : ['\'', '"'])
+		foreach (raw; quoteChar ? [false, true] : [false])
 		  encLoop:
-			foreach (triple; quote ? [false, true] : [false])
+			foreach (triple; quoteChar ? [false, true] : [false])
 			{
 				import squelch.lex : isIdentifierStart, isIdentifierContinuation, keywords;
 
-				auto delimeter = replicate([DbtStringElem(quote)], quote ? triple ? 3 : 1 : 0);
-				auto delimeterStr = delimeter.tryToString();
+				auto delimiter = replicate([DbtStringElem(quoteChar)], quoteChar ? triple ? 3 : 1 : 0);
+				auto delimiterStr = delimiter.tryToString();
 
-				if (raw && str.canFind(delimeter))
+				if (raw && str.canFind(delimiter))
 					continue; // not representable in this encoding
 
 				string enc = "";
 				if (raw)
 					enc ~= 'r';
-				enc ~= delimeterStr;
+				enc ~= delimiterStr;
 
 				auto s = str[];
 				while (s.length)
@@ -94,7 +94,7 @@ string encode(ref const scope DbtString str, bool identifier)
 					bool ok = s.shift.match!(
 						(dchar c)
 						{
-							if (!quote)
+							if (!quoteChar)
 							{
 								bool first = rest.length == str.length;
 								if (c != cast(char)c)
@@ -140,7 +140,7 @@ string encode(ref const scope DbtString str, bool identifier)
 											enc ~= format(`\x%02x`, uint(c));
 											return true;
 										}
-										if ((delimeter.length && rest.startsWith(delimeter)) || c == '\\')
+										if ((delimiter.length && rest.startsWith(delimiter)) || c == '\\')
 										{
 											enc ~= '\\';
 											enc ~= c;
@@ -154,7 +154,7 @@ string encode(ref const scope DbtString str, bool identifier)
 						},
 						(DbtExpression e)
 						{
-							if (e.quoting != QuotingContext(quote, raw, triple))
+							if (e.quoting != QuotingContext(delimiterStr, raw))
 								return false;
 							enc ~= "{{" ~ e.expr ~ "}}";
 							return true;
@@ -163,9 +163,9 @@ string encode(ref const scope DbtString str, bool identifier)
 					if (!ok)
 						continue encLoop;
 				}
-				enc ~= delimeterStr;
+				enc ~= delimiterStr;
 
-				if (!quote)
+				if (!quoteChar)
 				{
 					if (enc.length == 0 || keywords.canFind!(kwd => kwd.icmp(enc) == 0))
 						continue encLoop;

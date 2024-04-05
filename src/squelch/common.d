@@ -6,9 +6,8 @@ import std.sumtype;
 
 struct QuotingContext
 {
-	char quote; // 0 if no quoting
+	string quote; // null if no quoting
 	bool raw;
-	bool triple;
 }
 
 /// Fragment of DbtString containing a DbtExpression
