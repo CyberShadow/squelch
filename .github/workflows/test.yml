@@ -12,5 +12,5 @@ jobs:
           compiler: dmd-2.104.0
 
       - run: dub test squelch:lib
-      - run: dub run -- test/*.sql
+      - run: for dialect in $(cd test ; ls) ; do dub run -- --dialect=$dialect test/$dialect/*.sql ; done
       - run: git diff --exit-code

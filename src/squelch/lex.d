@@ -142,7 +142,7 @@ bool isIdentifier(char c) { return isAlphaNum(c) || c == '_'; }
 bool isIdentifierStart(char c) { return isAlpha(c) || c == '_'; }
 bool isIdentifierContinuation(char c) { return isIdentifier(c) || c == '-'; }
 
-Token[] lex(string s)
+Token[] lex(string s, Dialect dialect)
 {
 	Token[] tokens;
 
@@ -195,13 +195,21 @@ tokenLoop:
 					i++;
 					continue;
 				}
-				if (s[i].among('\'', '"', '`'))
+				if (s[i].among('\'', '"', '`') || (dialect == Dialect.duckdb && s[i..$].startsWith("$$")))
 				{
 					s = s[i .. $];
-					if (s.length > 3 && s[1] == s[0] && s[2] == s[0])
+					if (dialect == Dialect.bigquery && s.length > 3 && s[1] == s[0] && s[2] == s[0])
 					{
 						quote = s[0 .. 3];
 						s = s[3 .. $];
+					}
+					else
+					if (dialect == Dialect.duckdb && s[0] == '$')
+					{
+						quote = s[0 .. 2];
+						s = s[2 .. $];
+						assert(quote == "$$");
+						raw = true;
 					}
 					else
 					{
@@ -216,6 +224,13 @@ tokenLoop:
 						enforce(s.length, "Unterminated string");
 						if (s.skipOver(quote))
 						{
+							if (dialect == Dialect.duckdb && quote.length == 1 && s.skipOver(quote))
+							{
+								foreach (c; quote)
+									text ~= DbtStringElem(c);
+								continue;
+							}
+
 							if (quote[0] == '`')
 							{
 								enforce(!raw && !bytes && quote.length == 1, "Invalid quoted identifier");

@@ -2,6 +2,15 @@ module squelch.common;
 
 import std.sumtype;
 
+enum Dialect
+{
+	// https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
+	bigquery,
+
+	// https://duckdb.org/docs/sql/introduction
+	duckdb,
+}
+
 // Dbt interpolation:
 
 struct QuotingContext

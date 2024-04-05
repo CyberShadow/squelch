@@ -9,11 +9,15 @@ import ae.utils.funopt;
 import ae.utils.main;
 import ae.utils.text;
 
+import squelch.common : Dialect;
 import squelch.lex;
 import squelch.format;
 import squelch.write;
 
-void program(string[] files)
+void program(
+	string[] files,
+	Dialect dialect = Dialect.bigquery,
+)
 {
 	foreach (fileName; files)
 	{
@@ -21,12 +25,12 @@ void program(string[] files)
 		auto src = fileName == "-"
 			? readFile(stdin).assumeUnique.asText()
 			: readText(fileName);
-		auto tokens = lex(src);
+		auto tokens = lex(src, dialect);
 		tokens = format(tokens);
 		auto o = fileName == "-"
 			? stdout
 			: File(fileName ~ ".squelch-tmp", "wb");
-		save(tokens, o);
+		save(tokens, dialect, o);
 		o.close();
 		if (fileName != "-")
 			rename(fileName ~ ".squelch-tmp", fileName);
