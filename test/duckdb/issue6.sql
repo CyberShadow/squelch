@@ -18,3 +18,9 @@ wsmape: %.2g',
     SUM(weight * ABS(pred_kpi - kpi) * 2 / (pred_kpi + kpi))
   / total_weight
 ) AS wsmaspe_tooltip;
+
+SELECT
+  {%- if facet %}
+    {{ facet }},
+  {%- endif %}
+  1;

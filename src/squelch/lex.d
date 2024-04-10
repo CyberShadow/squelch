@@ -183,13 +183,13 @@ tokenLoop:
 
 			while (i < s.length)
 			{
-				if (toUpper(s[i]) == 'R')
+				if (dialect == Dialect.bigquery && toUpper(s[i]) == 'R')
 				{
 					raw = true;
 					i++;
 					continue;
 				}
-				if (toUpper(s[i]) == 'B')
+				if (dialect == Dialect.bigquery && toUpper(s[i]) == 'B')
 				{
 					bytes = true;
 					i++;
@@ -327,9 +327,10 @@ tokenLoop:
 		if (isIdentifierStart(s[0]) || s.startsWith("{{"))
 		{
 			DbtString text;
+			bool raw = dialect == Dialect.duckdb;
 			while (s.length)
 			{
-				if (s.readDbtExpression(text, QuotingContext(null)))
+				if (s.readDbtExpression(text, QuotingContext(null, raw)))
 					continue;
 				if (!isIdentifierContinuation(s[0]))
 					break;
