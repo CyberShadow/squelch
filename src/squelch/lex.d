@@ -306,7 +306,7 @@ tokenLoop:
 			return q.length && isDigit(q[0]);
 		}())
 		{
-			auto text = s.skipWhile!((char c) => c.isOneOf("0123456789abcdefABCDEFxX-."));
+			auto text = s.skipWhile!((char c) => c.isOneOf("0123456789abcdefABCDEFxX-."))(true);
 			tokens ~= Token(TokenNumber(text.toLower));
 			continue tokenLoop;
 		}
