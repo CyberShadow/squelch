@@ -34,7 +34,7 @@ void save(Token[] tokens, Dialect dialect, File output)
 			},
 			(ref TokenNamedParameter t)
 			{
-				output.write(`@`, t.text);
+				output.write(dialect == Dialect.postgresql ? `$` : `@`, t.text);
 			},
 			(ref TokenOperator t)
 			{
@@ -182,6 +182,7 @@ string encode(ref const scope DbtString str, bool identifier, Dialect dialect)
 			return bestEnc;
 
 		case Dialect.duckdb:
+		case Dialect.postgresql:
 			string bestEnc;
 			foreach (quote; identifier ? [``, `"`] : [`'`, `$$`])
 			  duckEncLoop:

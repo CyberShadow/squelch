@@ -9,6 +9,9 @@ enum Dialect
 
 	// https://duckdb.org/docs/sql/introduction
 	duckdb,
+
+	// https://www.postgresql.org/docs/current/sql-syntax.html
+	postgresql,
 }
 
 // Dbt interpolation:

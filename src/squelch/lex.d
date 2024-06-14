@@ -175,6 +175,14 @@ tokenLoop:
 			continue tokenLoop;
 		}
 
+		// TokenNamedParameter
+		if (dialect == Dialect.postgresql && s.skipOver("$"))
+		{
+			auto text = s.skipWhile!((char c) => c.isAlphaNum || c.isOneOf("_"));
+			tokens ~= Token(TokenNamedParameter(text));
+			continue tokenLoop;
+		}
+
 		// TokenString / quoted TokenIdentifier
 		{
 			size_t i;
@@ -195,7 +203,10 @@ tokenLoop:
 					i++;
 					continue;
 				}
-				if (s[i].among('\'', '"', '`') || (dialect == Dialect.duckdb && s[i..$].startsWith("$$")))
+				if (s[i].among('\'', '"')
+					|| (dialect.among(Dialect.bigquery, Dialect.duckdb) && s[i] == '`')
+					|| (dialect == Dialect.duckdb && s[i..$].startsWith("$$"))
+				)
 				{
 					s = s[i .. $];
 					if (dialect == Dialect.bigquery && s.length > 3 && s[1] == s[0] && s[2] == s[0])
@@ -231,7 +242,7 @@ tokenLoop:
 								continue;
 							}
 
-							if (quote[0] == '`')
+							if (quote[0] == (dialect == Dialect.postgresql ? '"' : '`'))
 							{
 								enforce(!raw && !bytes && quote.length == 1, "Invalid quoted identifier");
 								tokens ~= Token(TokenIdentifier(text));
@@ -361,6 +372,9 @@ tokenLoop:
 		}
 
 		// TokenOperator
+		const(string)[] operators = .operators;
+		if (dialect == Dialect.postgresql)
+			operators ~= "::";
 		foreach_reverse (operator; operators)
 			if (s.startsWith(operator))
 			{
@@ -388,16 +402,17 @@ tokenLoop:
 
 	// NUMERIC / BIGNUMERIC (in numeric literals)
 	// https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#numeric_literals
-	foreach (i; 1 .. tokens.length)
-	{
-		bool isString = tokens[i].match!((ref TokenString _) => true, (ref _) => false);
-		if (isString)
+	if (dialect == Dialect.bigquery)
+		foreach (i; 1 .. tokens.length)
 		{
-			auto kwd = tokens[i - 1].match!((ref TokenIdentifier t) => t.text, _ => null).tryToString.toUpper;
-			if (kwd.among("NUMERIC", "BIGNUMERIC"))
-				tokens[i - 1] = Token(TokenKeyword(kwd));
+			bool isString = tokens[i].match!((ref TokenString _) => true, (ref _) => false);
+			if (isString)
+			{
+				auto kwd = tokens[i - 1].match!((ref TokenIdentifier t) => t.text, _ => null).tryToString.toUpper;
+				if (kwd.among("NUMERIC", "BIGNUMERIC"))
+					tokens[i - 1] = Token(TokenKeyword(kwd));
+			}
 		}
-	}
 
 	// RETURNS (in function declarations)
 	foreach (i; 1 .. tokens.length)
@@ -499,6 +514,7 @@ tokenLoop:
 	}
 
 	// Handle special role of < and > after ARRAY/STRUCT
+	if (dialect == Dialect.bigquery)
 	{
 		int depth;
 		for (size_t i = 1; i < tokens.length; i++)
