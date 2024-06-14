@@ -17,11 +17,13 @@ import squelch.write;
 void program(
 	string[] files,
 	Dialect dialect = Dialect.bigquery,
+	Switch!("Do not print progress.", 'q') quiet = false,
 )
 {
 	foreach (fileName; files)
 	{
-		stderr.writeln("Processing ", fileName);
+		if (!quiet)
+			stderr.writeln("Processing ", fileName);
 		auto src = fileName == "-"
 			? readFile(stdin).assumeUnique.asText()
 			: readText(fileName);
