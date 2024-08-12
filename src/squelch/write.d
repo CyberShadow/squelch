@@ -182,7 +182,6 @@ string encode(ref const scope DbtString str, bool identifier, Dialect dialect)
 			return bestEnc;
 
 		case Dialect.duckdb:
-		case Dialect.postgresql:
 			string bestEnc;
 			foreach (quote; identifier ? [``, `"`] : [`'`, `$$`])
 			  duckEncLoop:
@@ -284,5 +283,88 @@ string encode(ref const scope DbtString str, bool identifier, Dialect dialect)
 			assert(bestEnc, "Failed to encode string: " ~ format("%(%s%)", [str]));
 			return bestEnc;
 			
+		case Dialect.postgresql:
+			string bestEnc;
+		  pgEncLoop:
+			foreach (quote; identifier ? [``, `"`] : [`'`])
+			{
+				// Repeat the quote character twice to insert it literally once
+				auto doubleEscape = quote.length == 1;
+
+				import squelch.lex : isIdentifierStart, isIdentifierContinuation, keywords;
+
+				auto delimiter = quote.map!(c => DbtStringElem(c)).array;
+
+				if (delimiter.length && !doubleEscape && str.canFind(delimiter))
+					continue; // not representable in this encoding
+
+				string enc = "";
+				enc ~= quote;
+
+				auto s = str[];
+				while (s.length)
+				{
+					auto rest = s;
+					bool ok = s.shift.match!(
+						(dchar c)
+						{
+							if (!quote.length)
+							{
+								bool first = rest.length == str.length;
+								if (c != cast(char)c)
+									return false;
+								bool ok = first
+									? isIdentifierStart(cast(char)c)
+									: isIdentifierContinuation(cast(char)c);
+								if (!ok)
+									return false;
+
+								switch (c)
+								{
+									case '0':
+										..
+									case '9':
+									case 'a':
+										..
+									case 'z':
+									case '_':
+									case '$':
+										break;
+									default:
+										return false;
+								}
+							}
+
+							if (doubleEscape && c == quote[0])
+							{
+								enc ~= c;
+								enc ~= c;
+								return true;
+							}
+
+							enc ~= c;
+							return true;
+						},
+						(DbtExpression /*e*/)
+						{
+							return false; // Not implemented
+						}
+					);
+					if (!ok)
+						continue pgEncLoop;
+				}
+				enc ~= quote;
+
+				if (!quote.length)
+				{
+					if (enc.length == 0 || keywords.canFind!(kwd => kwd.icmp(enc) == 0))
+						continue pgEncLoop;
+				}
+
+				if (!bestEnc || enc.length < bestEnc.length)
+					bestEnc = enc;
+			}
+			assert(bestEnc, "Failed to encode string: " ~ format("%(%s%)", [str]));
+			return bestEnc;
 	}
 }
