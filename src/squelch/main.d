@@ -16,7 +16,7 @@ import squelch.write;
 
 void program(
 	string[] files,
-	Dialect dialect = Dialect.bigquery,
+	Option!Dialect dialect = Dialect.bigquery,
 	Switch!("Do not print progress.", 'q') quiet = false,
 )
 {
