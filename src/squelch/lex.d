@@ -36,7 +36,8 @@ immutable string[] operators =
 	"<<", ">>",
 	"=>",
   // duckdb special operator in UNNEST(col, recursive := true)
-  ":="
+  ":=",
+  "**"
 ];
 
 // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
