@@ -35,6 +35,9 @@ immutable string[] operators =
 	"~",
 	"<<", ">>",
 	"=>",
+  // duckdb special operator in UNNEST(col, recursive := true)
+  ":=",
+  "**"
 ];
 
 // https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords
@@ -360,29 +363,40 @@ tokenLoop:
 			continue tokenLoop;
 		}
 
-		// TokenOperator
-		foreach_reverse (operator; operators)
-			if (s.startsWith(operator))
-			{
-				s = s[operator.length .. $];
+    // TokenOperator
+    foreach_reverse (operator; operators)
+        if (s.startsWith(operator))
+        {
+            s = s[operator.length .. $];
 
-				// Normalize operators
-				string token = {
-					switch (operator)
-					{
-						case "<>":
-							return "!=";
-						default:
-							return operator;
-					}
-				}();
+            // Normalize operators
+            string token = {
+                switch (operator)
+                {
+                case "<>":
+                    return "!=";
+                case ":=":
+                    if (dialect != Dialect.duckdb)
+                    {
+                        throw new Exception(
+                                "Unrecognized syntax ':=' for dialect " ~ dialect.to!string ~ ": " ~ s[0 .. min(20,
+                                $)]); // Error if not DuckDB
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+                default:
+                    return operator;
+                }
+            }();
 
-				tokens ~= Token(TokenOperator(token));
-				continue tokenLoop;
-			}
+            tokens ~= Token(TokenOperator(token));
+            continue tokenLoop;
+        }
 
-		throw new Exception("Unrecognized syntax: " ~ s[0..min(20, $)]);
-	}
+    throw new Exception("Unrecognized syntax: " ~ s[0 .. min(20, $)]);
+    }
 
 	// Process contextual keywords
 
